@@ -1,0 +1,10 @@
+module CancerMoles.components
+CustomMenuButton 1.0 CustomMenuButton.qml
+AnalyzeButton 1.0 AnalyzeButton.qml
+LargeActionButton 1.0 LargeActionButton.qml
+SmallActionButton 1.0 SmallActionButton.qml
+AccentActionButton 1.0 AccentActionButton.qml
+PatientDataForm 1.0 PatientDataForm.qml
+MelanomaIndicator 1.0 MelanomaIndicator.qml
+AnalysisHistoryTable 1.0 AnalysisHistoryTable.qml
+Logo 1.0 Logo.qml
