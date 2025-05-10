@@ -2,6 +2,7 @@
 ### Do not change
 
 add_subdirectory(components)
+add_subdirectory(screens)
 set_source_files_properties(Constants.qml
     PROPERTIES
         QT_QML_SINGLETON_TYPE true

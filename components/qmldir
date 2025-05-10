@@ -8,3 +8,6 @@ PatientDataForm 1.0 PatientDataForm.qml
 MelanomaIndicator 1.0 MelanomaIndicator.qml
 AnalysisHistoryTable 1.0 AnalysisHistoryTable.qml
 Logo 1.0 Logo.qml
+WorkspacePanel 1.0 WorkspacePanel.qml
+LeftMenuPanel 1.0 LeftMenuPanel.qml
+TopBar 1.0 TopBar.qml

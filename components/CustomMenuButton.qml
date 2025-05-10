@@ -10,7 +10,7 @@ Button {
 
     // --- Настраиваемые свойства (остаются для текста и, возможно, иконки) ---
     // text: qsTr("Текст") // Лучше задавать текст при использовании кнопки
-
+    property bool active: false
     // --- Используем цвета и параметры из Constants.qml ---
     readonly property color normalColor: Constants.buttonSecondaryBackground
     readonly property color hoverColor: Constants.buttonSecondaryHover
@@ -41,7 +41,10 @@ Button {
             anchors.fill: parent
             // Выбираем цвет фона в зависимости от состояния кнопки, используя значения из Constants
             color: {
-                if (control.pressed && control.hovered) {
+                if(control.active) {
+                    control.pressedHoverColor
+                }
+                else if (control.pressed && control.hovered) {
                     control.pressedHoverColor // Constants.buttonSecondaryPressedHover
                 } else if (control.pressed) {
                     control.pressedColor      // Constants.buttonSecondaryPressed
@@ -66,7 +69,7 @@ Button {
             samples: 17 // Качество тени
             color: control.shadowColor   // Constants.shadow
             spread: 0.1
-            visible: control.enabled
+            visible: active//control.enabled
         }
     }
 

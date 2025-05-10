@@ -18,6 +18,9 @@ qt6_add_qml_module(CancerMoles_components
         "MelanomaIndicator.qml"
         "CustomMenuButton.qml"
         "Logo.qml"
+        "TopBar.qml"
+        "LeftMenuPanel.qml"
+        "WorkspacePanel.qml"
 )
 
 

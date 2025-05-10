@@ -1,3 +1,4 @@
+//AnalysisHistoryTable.qml
 import QtQuick
 import QtQuick.Layouts
 import CancerMoles 1.0 // Импорт констант
@@ -14,7 +15,11 @@ Rectangle { // Используем Rectangle как корневой элеме
 
     // Свойство для модели данных (массив объектов)
     // Пример объекта: { analysisDate: "01.01.2025", riskValue: "13%" }
-    property list<variant> tableModel: []
+    property list<variant> tableModel: [
+        { analysisDate: "01.01.2025", riskValue: "13%" },
+        { analysisDate: "01.01.2025", riskValue: "13%" }
+    ]
+
 
     // Основной Layout: Заголовок над списком
     ColumnLayout {
@@ -25,9 +30,10 @@ Rectangle { // Используем Rectangle как корневой элеме
         Rectangle { // Фон заголовка
             id: headerRect
             // Предполагаем, что фон заголовка - коричневый
-            color: Constants.borderPrimary // Используем цвет рамки для фона заголовка
+            color: "transparent"//Constants.borderPrimary // Используем цвет рамки для фона заголовка
             // Если фон другой (бежевый), используйте: Constants.tableHeaderBackground
             Layout.fillWidth: true
+            //Layout.fillHeight: true
             implicitHeight: headerRow.implicitHeight + 10 // Высота строки + отступы
 
             RowLayout { // Размещение текста заголовка
@@ -39,7 +45,7 @@ Rectangle { // Используем Rectangle как корневой элеме
                 // Текст "Дата"
                 Text {
                     text: qsTr("Дата")
-                    color: Constants.textOnPrimary // Белый текст на коричневом фоне
+                    color: Constants.textPrimary // Белый текст на коричневом фоне
                     // Если фон заголовка другой, используйте Constants.tableHeaderText
                     font.bold: true
                     Layout.fillWidth: true // Распределить ширину
@@ -47,14 +53,14 @@ Rectangle { // Используем Rectangle как корневой элеме
                 }
                 // Вертикальный разделитель в заголовке
                 Rectangle {
-                     width: 1; Layout.preferredHeight: parent.height
-                     color: Constants.textOnPrimary // Белый разделитель (или цвет фона, если нужен только отступ)
-                     opacity: 0.5 // Полупрозрачный
+                     width: 2;
+                     Layout.fillHeight: true
+                     color: Constants.borderPrimary//Constants.textOnPrimary // Белый разделитель (или цвет фона, если нужен только отступ)
                 }
                 // Текст "Риск"
                 Text {
                     text: qsTr("Риск")
-                    color: Constants.textOnPrimary // Белый текст
+                    color: Constants.textPrimary // Белый текст
                     font.bold: true
                     Layout.fillWidth: true
                     horizontalAlignment: Text.AlignHCenter
@@ -74,9 +80,12 @@ Rectangle { // Используем Rectangle как корневой элеме
             delegate: Rectangle { // Каждая строка - Rectangle с границами
                 width: listView.width
                 height: rowLayout.implicitHeight + 10 // Высота по тексту + отступы
+                implicitHeight: headerRow.implicitHeight + 10
+                implicitWidth: headerRow.width / 2
+                Layout.fillWidth: true
                 color: "transparent" // Фон строки (можно чередовать цвета)
                 // Нижняя граница строки
-                border.color: Constants.tableCellBorder
+                border.color: Constants.borderPrimary//Constants.tableCellBorder
                 border.width: 1 // Только нижняя граница (или все?) - сейчас все
 
                 RowLayout { // Размещение ячеек в строке
@@ -96,8 +105,10 @@ Rectangle { // Используем Rectangle как корневой элеме
                     }
                     // Вертикальный разделитель в строке
                     Rectangle {
-                        width: 1; Layout.preferredHeight: parent.height
-                        color: Constants.tableCellBorder
+                        width: 2
+                         Layout.preferredWidth: 2
+                         Layout.fillHeight: true
+                         color: Constants.borderPrimary//Constants.textOnPrimary // Белый разделитель (или цвет фона, если нужен только отступ)
                     }
                     // Ячейка "Риск"
                     Text {
@@ -107,6 +118,8 @@ Rectangle { // Используем Rectangle как корневой элеме
                         horizontalAlignment: Text.AlignHCenter
                         elide: Text.ElideRight
                     }
+
+                    Item{Layout.fillWidth: true}
                 } // Конец RowLayout строки
             } // Конец делегата (Rectangle строки)
 

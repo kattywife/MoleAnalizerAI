@@ -1,0 +1,6 @@
+module CancerMoles.screens
+AnalysisScreen 1.0 AnalysisScreen.qml
+MainScreen 1.0 MainScreen.qml
+AnalysisWorkspace 1.0 AnalysisWorkspace.qml
+PatientsWorkspace 1.0 PatientsWorkspace.qml
+AnalysisResultsWorkspace 1.0 AnalysisResultsWorkspace.qml

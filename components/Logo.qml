@@ -5,7 +5,8 @@ Item { // Используем Item как легкий контейнер
     id: root
 
     // --- Свойства компонента ---
-    property url logoSource: "qrc:/qt/qml/CancerMoles/assets/images/logo.png" // ПУТЬ К ВАШЕМУ ЛОГО! Укажите правильный.
+    property url logoSource: "file:///C:/Users/user/Documents/QtDesigner/CancerMoles/CancerMoles/assets/images/логотип.svg"
+        // "C:/Users/user/Documents\QtDesigner\CancerMoles\CancerMoles\assets\images\логотип.svg"
                                                            // Используйте "qrc:" если ресурсы встроены, или относительный путь.
     property bool showBackground: false // Показывать ли белый фон (по умолчанию - нет)
     property color backgroundColor: Constants.buttonSecondaryBackground // Белый цвет фона из констант

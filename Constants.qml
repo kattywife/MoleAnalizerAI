@@ -58,7 +58,7 @@ QtObject {
     readonly property color tableHeaderBackground: "#D2B48C" // Бежевый (Tan)
     // ИЗМЕНЕНО: Текст заголовка таблицы теперь тоже будет коричневым, т.к. он использует textPrimary
     readonly property color tableHeaderText: textPrimary
-    readonly property color tableCellBorder: borderPrimary   // Коричневая рамка ячейки (#863A1A)
+    readonly property color tableCellBorder: tableCellBorder   // Коричневая рамка ячейки (#863A1A)
 
     // --- Дополнительные цвета из скриншота (пока не используются) ---
     // readonly property color unusedRed: "#BE2121"

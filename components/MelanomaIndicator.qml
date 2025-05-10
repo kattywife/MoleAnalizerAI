@@ -8,7 +8,7 @@ Rectangle {
     property real value: 0 // Входное значение риска (0-100)
 
     // --- Параметры внешнего вида ---
-    readonly property color textColor: Constants.textOnAccent // Белый текст
+    readonly property color textColor: Constants.textPrimary // Белый текст
     readonly property int borderWidth: 2
     readonly property real cornerRadius: 8 // Скругление как у других кнопок/элементов
 
@@ -26,7 +26,7 @@ Rectangle {
             Constants.resultHighRisk // Красный
         }
     }
-    border.color: root.color // Рамка того же цвета, что и фон
+    border.color: Constants.borderPrimary   // Рамка того же цвета, что и фон
     border.width: root.borderWidth
     radius: root.cornerRadius
 
