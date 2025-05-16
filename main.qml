@@ -1,7 +1,7 @@
 import QtQuick 2.15
 import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.15
-import QtQuick.Dialogs
+import QtQuick.Dialogs 2.3
 import Qt.labs.platform 1.1
 
 ApplicationWindow {
@@ -146,26 +146,35 @@ ApplicationWindow {
     }
 
     FileDialog {
-        id: fileDialog
-        title: "Выберите изображение родинки"
-        nameFilters: ["Images (*.png *.jpg *.jpeg *.bmp)"]
-        onAccepted: {
-            currentImagePath = selectedFile.toString().replace("file:///", "")
-        }
-    }
+           id: fileDialog
+           title: "Выберите изображение"
+           nameFilters: ["Images (*.png *.jpg *.jpeg)"]
+           onAccepted: {
+               currentImagePath = backend.save_image(selectedFile)
+           }
+       }
+   
+       Connections {
+           target: backend
+           function onAnalysisComplete(result) {
+               analysisResult = {
+                   status: result.status,
+                   diagnosis: result.diagnosis,
+                   confidence: result.confidence,
+                   malignant_prob: result.malignant_prob,
+                   benign_prob: result.benign_prob,
+                   recommendation: result.recommendation
+               }
+           }
+       }
+   
+       function analyzeImage() {
+           backend.analyze_image(currentImagePath)
+       }
 
-    function analyzeImage() {
-        analysisResult = {
-            status: "success",
-            diagnosis: "Доброкачественное",
-            confidence: 0.85,
-            malignant_prob: 0.15,
-            benign_prob: 0.85,
-            recommendation: "Плановый осмотр через 6 месяцев"
-        }
-    }
 
     function addPatient() {
         console.log("Добавлен новый пациент:", fullNameField.text)
     }
 }
+
