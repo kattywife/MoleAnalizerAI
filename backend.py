@@ -2,8 +2,9 @@ import os
 import numpy as np
 import tensorflow as tf
 from datetime import datetime
-from typing import Optional, Dict
+from typing import Dict, Optional
 from PIL import Image
+from PySide6.QtCore import QObject, Slot, Signal
 
 class SkinCancerModel:
     def __init__(self, model_path: str = "model.h5"):
@@ -13,7 +14,7 @@ class SkinCancerModel:
     def _load_model(self, model_path: str) -> tf.keras.Model:
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found at {model_path}")
-
+        
         try:
             model = tf.keras.models.load_model(model_path)
             print("Model loaded successfully")
@@ -64,7 +65,7 @@ class SkinAnalysisBackend:
 
     def analyze_mole(self) -> Dict[str, str]:
         if not self.current_image_path:
-            raise ValueError
+            raise ValueError("No image available for analysis")
 
         try:
             results = self.model.predict(self.current_image_path)
@@ -83,12 +84,45 @@ class SkinAnalysisBackend:
         except Exception as e:
             raise RuntimeError(f"Analysis failed: {e}")
 
-class SkinSightBackend:
+class SkinSightBackend(QObject):
+    analysisComplete = Signal(dict)
+    
     def __init__(self, model_path: str = "model.h5"):
+        super().__init__()
         self.patients = []
         self.current_user = "Виктор Иванов"
         self.image_analyzer = SkinAnalysisBackend(model_path)
-
+    
+    @Slot(str, result=str)
+    def save_image(self, file_path: str) -> str:
+        try:
+            clean_path = file_path.replace("file://", "")
+            return self.image_analyzer.save_mole_image(clean_path)
+        except Exception as e:
+            print(f"Error saving image: {e}")
+            return ""
+    
+    @Slot(str)
+    def analyze_image(self, image_path: str):
+        try:
+            result = self.image_analyzer.analyze_mole()
+            self.analysisComplete.emit(result)
+        except Exception as e:
+            print(f"Error analyzing image: {e}")
+            self.analysisComplete.emit({
+                "status": "error",
+                "message": str(e)
+            })
+    
+    @Slot(result=list)
+    def get_patients(self) -> list:
+        return self.patients
+    
+    @Slot(dict, result=int)
     def add_patient(self, patient_data: dict) -> int:
-        self.patients.append(patient_data)
-        return len(self.patients) - 1
+        try:
+            self.patients.append(patient_data)
+            return len(self.patients) - 1
+        except Exception as e:
+            print(f"Error adding patient: {e}")
+            return -1
