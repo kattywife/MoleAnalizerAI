@@ -1,0 +1,13 @@
+{
+    "database": {
+        "host": "localhost",
+        "user": "root",
+        "password": "",
+        "database": "skinsight_test"
+    },
+    "application": {
+        "models_dir": "models",
+        "model_file": "model.h5",
+        "uploads_dir": "test_uploads"
+    }
+}

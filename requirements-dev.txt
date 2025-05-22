@@ -1,0 +1,17 @@
+-r requirements.txt
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+pytest-qt==4.2.0
+pytest-xvfb==3.0.0
+pytest-timeout==2.2.0
+
+# Development tools
+black==23.12.1
+flake8==6.1.0
+mypy==1.8.0
+
+# Type stubs
+types-Pillow==10.1.0
+types-requests==2.31.0

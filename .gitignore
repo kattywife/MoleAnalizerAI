@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+.env
+
+# Qt/QML
+*.qmlc
+*.jsc
+*.qm
+build/
+.qmake.stash
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+Makefile
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.user
+
+# Project specific
+uploads/*
+!uploads/.gitkeep
+models/*
+!models/.gitkeep
+config.json
+
+# Database
+*.db
+*.sqlite3
+
+# Logs
+*.log
