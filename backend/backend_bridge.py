@@ -215,6 +215,7 @@ class BackendBridge(QObject):
     @Property(int)
     def currentPatientId(self) -> Optional[int]:
         """Current patient ID property for QML."""
+        print(self._current_patient_id)
         return self._current_patient_id
 
     @currentPatientId.setter
