@@ -49,7 +49,9 @@ class BackendBridge(QObject):
             ext = os.path.splitext(image_path)[1]
             filename = f"mole_{timestamp}{ext}"
             save_path = os.path.join(self.upload_dir, filename)
-            
+            print(image_path)
+            print(save_path)
+            image_path = image_path.replace("file://", "")
             # Copy the file
             with open(image_path, "rb") as src, open(save_path, "wb") as dst:
                 dst.write(src.read())
