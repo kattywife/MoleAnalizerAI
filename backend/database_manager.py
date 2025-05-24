@@ -158,6 +158,7 @@ class DatabaseManager:
             return analysis_id
         except mysql.connector.Error as err:
             self.connection.rollback()
+            print(f"Error adding analysis: {err}")
             raise RuntimeError(f"Error adding analysis: {err}")
 
     def _add_analysis_metadata(self, analysis_id: int, key: str, value: str):

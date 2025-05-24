@@ -22,11 +22,11 @@ class BackendBridge(QObject):
         
         try:
             self.db = DatabaseManager()
-            self.model = ModelHandler()
             self._current_patient_id = None
             self._current_image_path = None
             self._user_name = "Доктор"
             self._clinic_name = "SkinSight"
+            self.model = ModelHandler()
         except Exception as e:
             self.errorOccurred.emit(str(e))
 
@@ -49,8 +49,6 @@ class BackendBridge(QObject):
             ext = os.path.splitext(image_path)[1]
             filename = f"mole_{timestamp}{ext}"
             save_path = os.path.join(self.upload_dir, filename)
-            print(image_path)
-            print(save_path)
             image_path = image_path.replace("file://", "")
             # Copy the file
             with open(image_path, "rb") as src, open(save_path, "wb") as dst:
@@ -71,10 +69,17 @@ class BackendBridge(QObject):
 
         try:
             self.analysisStarted.emit()
-            
+
             # Get model prediction
+            # probabilities = {
+            #     "melanoma_probability": 0.2,
+            #     "benign_probability": 0.8
+            # } 
             probabilities = self.model.predict(self._current_image_path)
             diagnosis, detail_text = self.model.get_prediction_text(probabilities)
+            # diagnosis = "High Risk - Urgent Medical Attention Required"
+            # detail_text = f"The analysis indicates a high risk of melanoma (50%). Immediate medical consultation is strongly recommended."
+        
             
             result = {
                 "melanoma_probability": probabilities["melanoma_probability"],
@@ -85,22 +90,24 @@ class BackendBridge(QObject):
             }
             
             # If we have a current patient, save the analysis
-            if self._current_patient_id:
-                analysis_data = {
-                    "patient_id": self._current_patient_id,
-                    "image_path": self._current_image_path,
-                    "melanoma_probability": probabilities["melanoma_probability"],
-                    "diagnosis_text": diagnosis,
-                    "metadata": {
-                        "detail_text": detail_text,
-                        "benign_probability": str(probabilities["benign_probability"])
-                    }
-                }
-                self.db.add_analysis(analysis_data)
-            
+            # if self._current_patient_id:
+            #     analysis_data = {
+            #         "patient_id": self._current_patient_id,
+            #         "image_path": self._current_image_path,
+            #         "melanoma_probability": probabilities["melanoma_probability"],
+            #         "diagnosis_text": diagnosis
+            #         # "metadata": {
+            #         #     "detail_text": detail_text,
+            #         #     "benign_probability": str(probabilities["benign_probability"])
+            #         # }
+            #     }
+            #     self.db.add_analysis(analysis_data)
+                
+            self._current_result = result
             self.analysisComplete.emit(result)
             return result
         except Exception as e:
+            print(f"Error during analysis: {e}")
             self.errorOccurred.emit(f"Error during analysis: {e}")
             return {}
 
@@ -173,16 +180,18 @@ class BackendBridge(QObject):
                 self.errorOccurred.emit("No patient selected")
                 return False
 
+            print(self._current_patient_id,  self._current_result)
             analysis_data = {
                 "patient_id": self._current_patient_id,
                 "image_path": self._current_image_path,
                 "melanoma_probability": self._current_result["melanoma_probability"],
                 "diagnosis_text": self._current_result["diagnosis"],
-                "metadata": {
-                    "detail_text": self._current_result["detail_text"],
-                    "benign_probability": str(1.0 - self._current_result["melanoma_probability"])
-                }
+                # "metadata": {
+                #     "detail_text": self._current_result["detail_text"],
+                #     "benign_probability": str(1.0 - self._current_result["melanoma_probability"])
+                # }
             }
+            print(analysis_data)
 
             analysis_id = self.db.add_analysis(analysis_data)
             self._current_result["saved"] = True
