@@ -1,0 +1,15 @@
+module components
+
+AccentActionButton 1.0 AccentActionButton.qml
+AnalysisHistoryTable 1.0 AnalysisHistoryTable.qml
+AnalyzeButton 1.0 AnalyzeButton.qml
+CustomMenuButton 1.0 CustomMenuButton.qml
+LargeActionButton 1.0 LargeActionButton.qml
+LeftMenuPanel 1.0 LeftMenuPanel.qml
+Logo 1.0 Logo.qml
+MelanomaIndicator 1.0 MelanomaIndicator.qml
+PatientDataForm 1.0 PatientDataForm.qml
+PatientSearchDialog 1.0 PatientSearchDialog.qml
+SmallActionButton 1.0 SmallActionButton.qml
+TopBar 1.0 TopBar.qml
+WorkspacePanel 1.0 WorkspacePanel.qml

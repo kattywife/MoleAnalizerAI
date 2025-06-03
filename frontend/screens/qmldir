@@ -1,0 +1,7 @@
+module screens
+
+MainScreen 1.0 MainScreen.qml
+AnalysisScreen 1.0 AnalysisScreen.qml
+AnalysisResultsWorkspace 1.0 AnalysisResultsWorkspace.qml
+AnalysisWorkspace 1.0 AnalysisWorkspace.qml
+PatientsWorkspace 1.0 PatientsWorkspace.qml
