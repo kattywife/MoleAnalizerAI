@@ -1,0 +1,14 @@
+# Web Framework and Server
+fastapi
+uvicorn[standard] # Includes standard extras like websockets, watchfiles for reload, python-dotenv
+
+# ML and Data Handling
+tensorflow         # Or tensorflow-cpu if you don't need/want GPU support
+keras>=3.0         # As per your test script's emphasis on Keras 3.x
+numpy
+Pillow             # For image processing (PIL)
+
+# Utilities
+python-multipart   # Required by FastAPI for form data (file uploads)
+python-dotenv      # For loading .env files (used in config.py)
+
