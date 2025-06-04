@@ -17,7 +17,42 @@ Rectangle {
     property url currentAnalyzedImageSource: ""
     property string currentAnalyzedImageName: ""
     property real currentMelanomaProbability: 0
+    property list<variant> modelProbabilities: []
 
+
+    function modelPredictionsToArray(modelPredictions){
+        const diagnosisMap = {
+            "Melanoma": "Меланома",
+            "Nevus": "Пигментный невус", // Assuming Nevus -> Пигментный невус
+            "Basal cell carcinoma": "Базалиома",
+            "Actinic keratosis": "Актинический кератоз",
+            "Benign keratosis-like lesions": "Себорейный кератоз", // Or could be "Кератоз"
+            "Dermatofibroma": "Дерматофиброма",
+            "Vascular lesions": "Сосудистые поражения" // Example, as it's in input but not target
+            // Add other mappings if your input can have more keys
+        };
+
+        let modelProbabilitiesData = [];
+
+        // 2. Iterate over the predictions, transform, and collect
+        for (const key in modelPredictions) {
+            if (modelPredictions.hasOwnProperty(key)) {
+                const probabilityValue = modelPredictions[key];
+                const russianDiagnosis = diagnosisMap[key] || key; // Fallback to key if no mapping
+
+                modelProbabilitiesData.push({
+                    probability: probabilityValue,
+                    diagnosis: qsTr(`${russianDiagnosis}`)
+                });
+            }
+        }
+
+        // 3. Sort by numeric probability in descending order
+        modelProbabilitiesData.sort((a, b) => b.probabilityValue - a.probabilityValue);
+        console.log(modelProbabilitiesData)
+
+        return modelProbabilitiesData
+    }
     // Основной ColumnLayout для TopBar и остального контента
     ColumnLayout {
         anchors.fill: parent
@@ -108,6 +143,7 @@ Rectangle {
            imageSourceToDisplay: mainScreenRoot.currentAnalyzedImageSource
            imageName: mainScreenRoot.currentAnalyzedImageName
            melanomaProbability: mainScreenRoot.currentMelanomaProbability
+           modelProbabilities: mainScreenRoot.modelProbabilities
 
            onBackClicked: {
                // Вернуться к настройке анализа
@@ -160,26 +196,19 @@ Rectangle {
                 anchors.fill: parent
                 onAnalysisTriggered: (imgSrc, imgName, patId) => {
                     console.log("Запущен анализ для:", imgSrc, imgName, "пациент:", patId);
-                    // Здесь должна быть логика самого анализа (вызов C++ или Python)
-                    // Для примера, просто генерируем случайный результат
-                    var randomProbability = Math.round(Math.random() * 100);
-
                     // Обновляем свойства в mainScreenRoot для передачи в AnalysisResultsWorkspace
                     mainScreenRoot.currentAnalyzedImageSource = imgSrc;
                     mainScreenRoot.currentAnalyzedImageName = imgName; // Или более осмысленное имя
-                    mainScreenRoot.currentMelanomaProbability = backend.get_current_analysis_result().melanoma_probability * 100 //randomProbability;
+                    //mainScreenRoot.currentMelanomaProbability = backend.get_current_analysis_result().melanoma_probability * 100 //randomProbability;
+                    var modelResult = backend.get_current_analysis_result()
+                    console.log(modelResult)
+                    mainScreenRoot.currentMelanomaProbability = modelResult.melanoma_probability * 100 //randomProbability;
+                    mainScreenRoot.modelProbabilities = mainScreenRoot.modelPredictionsToArray(modelResult.predictions)//modelProbabilitiesData
 
                     // Переключаем Loader на компонент с результатами
                     workspaceLoader.sourceComponent = analysisResultsScreenContentComponent;
                 }
 
-                // onAnalysisTriggered: function(imageSource, imageName, patientId) {
-                // stackView.push(analysisResults, {
-                //     imageSourceToDisplay: imageSource,
-                //     imageName: imageName,
-                //     melanomaProbability: backend.get_current_analysis_result().melanoma_probability * 100
-                // })
-                // }
             }
         }
 

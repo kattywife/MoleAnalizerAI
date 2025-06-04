@@ -12,6 +12,39 @@ Rectangle {
     property string diagnosisHeaderText: qsTr("Диагноз")
     property list<variant> modelData: []
 
+    function modelPredictionsToArray(modelPredictions){
+        const diagnosisMap = {
+            "Melanoma": "Меланома",
+            "Nevus": "Пигментный невус", // Assuming Nevus -> Пигментный невус
+            "Basal cell carcinoma": "Базалиома",
+            "Actinic keratosis": "Актинический кератоз",
+            "Benign keratosis-like lesions": "Себорейный кератоз", // Or could be "Кератоз"
+            "Dermatofibroma": "Дерматофиброма",
+            "Vascular lesions": "Сосудистые поражения" // Example, as it's in input but not target
+            // Add other mappings if your input can have more keys
+        };
+
+        let modelProbabilitiesData = [];
+
+        // 2. Iterate over the predictions, transform, and collect
+        for (const key in modelPredictions) {
+            if (modelPredictions.hasOwnProperty(key)) {
+                const probabilityValue = modelPredictions[key];
+                const russianDiagnosis = diagnosisMap[key] || key; // Fallback to key if no mapping
+
+                modelProbabilitiesData.push({
+                    probability: probabilityValue,
+                    diagnosis: qsTr(`${russianDiagnosis}`)
+                });
+            }
+        }
+
+        // 3. Sort by numeric probability in descending order
+        modelProbabilitiesData.sort((a, b) => b.probabilityValue - a.probabilityValue);
+        console.log(modelProbabilitiesData)
+
+        return modelProbabilitiesData
+    }
     // --- Dimensions ---
     implicitWidth: 550 // Default width, can be overridden by parent layout
 
@@ -24,11 +57,6 @@ Rectangle {
     color: App.Constants.buttonSecondaryBackground
     radius: App.Constants.radiusMedium
     clip: true // Crucial for ScrollView inside a Rectangle with radius
-
-    // --- Wrapper for ScrollView (if needed for layoutDirection, but we're ignoring that for now) ---
-    // For simplicity and focusing on sizing, let's remove the extra wrapper for now.
-    // If scrollbar placement becomes an issue again, we can re-add it,
-    // but the `anchors.right` on ScrollBar.vertical might suffice.
 
     ScrollView {
         id: scrollView
@@ -138,7 +166,7 @@ Rectangle {
                                 border.width: 1.5
                                 radius: implicitHeight / 2
                                 Text {
-                                    text: modelData.probability
+                                    text: qsTr(Number(modelData.probability * 100).toString() + "%")
                                     anchors.centerIn: parent
                                     font.family: App.Constants.fontFamily
                                     font.pixelSize: 14; font.bold: true

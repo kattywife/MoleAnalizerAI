@@ -74,20 +74,29 @@ class BackendBridge(QObject):
             # probabilities = {
             #     "melanoma_probability": 0.2,
             #     "benign_probability": 0.8
-            # } 
-            probabilities = self.model.predict(self._current_image_path)
-            diagnosis, detail_text = self.model.get_prediction_text(probabilities)
+            # # } 
+            # probabilities = self.model.predict(self._current_image_path)
+            # diagnosis, detail_text = self.model.get_prediction_text(probabilities)
             # diagnosis = "High Risk - Urgent Medical Attention Required"
             # detail_text = f"The analysis indicates a high risk of melanoma (50%). Immediate medical consultation is strongly recommended."
         
-            
+            model_result = self.model.predict(self._current_image_path)
+            diagnosis, detail_text = self.model.get_prediction_text(model_result["predictions"]["Melanoma"])
+            print(model_result)
             result = {
-                "melanoma_probability": probabilities["melanoma_probability"],
-                "benign_probability": probabilities["benign_probability"],
-                "diagnosis": diagnosis,
+                "melanoma_probability": model_result["predictions"]["Melanoma"],
+                "predictions": model_result["predictions"],
+                "diagnosis": "Melanoma", #diagnosis,
                 "detail_text": detail_text,
                 "image_path": self._current_image_path
             }
+            # result = {
+            #     "melanoma_probability": probabilities["melanoma_probability"],
+            #     "benign_probability": probabilities["benign_probability"],
+            #     "diagnosis": diagnosis,
+            #     "detail_text": detail_text,
+            #     "image_path": self._current_image_path
+            # }
             
             # If we have a current patient, save the analysis
             # if self._current_patient_id:
@@ -151,16 +160,16 @@ class BackendBridge(QObject):
             if not self._current_image_path:
                 return {}
             
+            # Check if we have a cached result
+            if hasattr(self, '_current_result'):
+                return self._current_result
+            
             current_result = {
                 "image_path": self._current_image_path,
                 "diagnosis": "",
                 "detail_text": "",
                 "melanoma_probability": 0.0
             }
-            
-            # Check if we have a cached result
-            if hasattr(self, '_current_result'):
-                return self._current_result
             
             # Otherwise return empty result
             return current_result
@@ -172,10 +181,11 @@ class BackendBridge(QObject):
     def save_analysis_result(self) -> bool:
         """Save the current analysis result to the database."""
         try:
+            print("save_analysis_result")
             if not hasattr(self, '_current_result') or not self._current_result:
                 self.errorOccurred.emit("No analysis result to save")
                 return False
-
+            print("_current_patient_id")
             if not self._current_patient_id:
                 self.errorOccurred.emit("No patient selected")
                 return False
@@ -185,6 +195,7 @@ class BackendBridge(QObject):
                 "patient_id": self._current_patient_id,
                 "image_path": self._current_image_path,
                 "melanoma_probability": self._current_result["melanoma_probability"],
+                "model_result": self._current_result["predictions"],
                 "diagnosis_text": self._current_result["diagnosis"],
                 # "metadata": {
                 #     "detail_text": self._current_result["detail_text"],

@@ -13,6 +13,7 @@ Rectangle {
     property url imageSourceToDisplay: "" // Путь к изображению, которое было проанализировано
     property string imageName: "" // Имя файла для отображения
     property real melanomaProbability: 0 // Вероятность меланомы (0-100)
+    property list<variant> modelProbabilities: []
     property string diagnosisText: "" // Текст диагноза
     property string detailText: "" // Детальный текст
     property bool isSaved: false // Сохранен ли результат
@@ -101,7 +102,7 @@ Rectangle {
                     spacing: 20
 
                     Text {
-                        text: resultsWorkspaceRoot.diagnosisText
+                        text: resultsWorkspaceRoot.detail_text //diagnosisText
                         color: getRiskColor(melanomaProbability)
                         font.bold: true
                         font.pixelSize: 20
@@ -133,7 +134,7 @@ Rectangle {
                         Layout.fillWidth: true
                         height: 1
                         color: App.Constants.divider
-                        visible: recommendationsList.count > 0
+                        visible: false //recommendationsList.count > 0
                     }
 
                     Components.ProbabilityDiagnosisTable {
@@ -146,18 +147,18 @@ Rectangle {
                                                  // (or 0 if you want it to fully disappear via layout)
                         //Layout.preferredHeight: probabilityTableInstance.implicitHeight // It wants to be its full content height
                         //Layout.maximumHeight: 400 // But not more than this
-
-                        modelData: [
-                            { probability: "87.4%", diagnosis: qsTr("Пигментный невус") },
-                            { probability: "43.6%", diagnosis: qsTr("Базалиома") },
-                            { probability: "32.1%", diagnosis: qsTr("Кератоз") },
-                            { probability: "23.3%", diagnosis: qsTr("Себорейный кератоз") },
-                            { probability: "14.2%", diagnosis: qsTr("Дерматофиброма") },
-                            { probability: "10.5%", diagnosis: qsTr("Актинический кератоз") },
-                            { probability: "5.2%", diagnosis: qsTr("Лентиго") },
-                            { probability: "0.0%", diagnosis: qsTr("Меланома") }
-                            // Add more items to ensure overflow for testing height: 250
-                        ]
+                        modelData: resultsWorkspaceRoot.modelProbabilities
+                        // modelData: [
+                        //     { probability: "87.4%", diagnosis: qsTr("Пигментный невус") },
+                        //     { probability: "43.6%", diagnosis: qsTr("Базалиома") },
+                        //     { probability: "32.1%", diagnosis: qsTr("Кератоз") },
+                        //     { probability: "23.3%", diagnosis: qsTr("Себорейный кератоз") },
+                        //     { probability: "14.2%", diagnosis: qsTr("Дерматофиброма") },
+                        //     { probability: "10.5%", diagnosis: qsTr("Актинический кератоз") },
+                        //     { probability: "5.2%", diagnosis: qsTr("Лентиго") },
+                        //     { probability: "0.0%", diagnosis: qsTr("Меланома") }
+                        //     // Add more items to ensure overflow for testing height: 250
+                        // ]
                     }
 
                     Item{

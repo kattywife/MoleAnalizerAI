@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS mole_analyses (
     patient_id INT NOT NULL,
     image_path VARCHAR(255) NOT NULL,
     melanoma_probability FLOAT NOT NULL,
+    predictions TEXT,
     diagnosis_text TEXT,
     analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE,

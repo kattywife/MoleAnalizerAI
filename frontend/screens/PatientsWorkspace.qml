@@ -11,6 +11,7 @@ Rectangle {
     color: "transparent"
 
     property string currentSearchTerm: ""
+    property list<variant> modelProbabilities: []
 
     ColumnLayout {
         anchors.fill: parent
@@ -179,6 +180,9 @@ Rectangle {
                         analysisDetailsDialog.imageSource = "../../" + analysis.image_path // Temp because of /frontend/screens
                         analysisDetailsDialog.melanomaProbability = analysis.melanoma_probability * 100
                         analysisDetailsDialog.diagnosisText = analysis.diagnosis_text
+                        //patientsWorkspaceRoot.modelProbabilities = analysis.predictions //modelProbabilities
+                        probabilityTableInstance.modelData = probabilityTableInstance.modelPredictionsToArray(analysis.predictions) //modelProbabilities
+                        console.log(analysis.predictions )
                         analysisDetailsDialog.open()
                     }
                 }
@@ -190,8 +194,8 @@ Rectangle {
         id: analysisDetailsDialog
         title: qsTr("Детали анализа")
         modal: true
-        width: 800
-        height: 650
+        width: parent.width * 0.85
+        height: parent.height * 0.85
         anchors.centerIn: parent
 
         property url imageSource: ""
@@ -234,7 +238,7 @@ Rectangle {
             spacing: 20
 
             Rectangle {
-                Layout.preferredWidth: parent.width * 0.65
+                Layout.preferredWidth: parent.width * 0.55
                 Layout.fillHeight: true
                 color: App.Constants.appBackground
                 border.color: App.Constants.divider
@@ -260,11 +264,19 @@ Rectangle {
                 }
 
                 Text {
-                    text: analysisDetailsDialog.diagnosisText
+                    text: analysisDetailsDialog.diagnosisText //detail_text
                     color: App.Constants.textPrimary
                     wrapMode: Text.WordWrap
                     Layout.fillWidth: true
                 }
+
+                Components.ProbabilityDiagnosisTable {
+                        id: probabilityTableInstance
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+
+                        modelData: patientsWorkspaceRoot.modelProbabilities
+                    }
 
                 Item { Layout.fillHeight: true }
             }

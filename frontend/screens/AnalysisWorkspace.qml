@@ -308,10 +308,17 @@ Rectangle {
                 Layout.preferredHeight: 50
                 enabled: hasValidImage &&  !isAnalyzing  //hasValidPatient &&
                 onClicked: {
+                    if (!patientForm.isFormValid()){
+                        return
+                    }
                     isAnalyzing = true
                     var savedPath = backend.save_image(loadedImage.source.toString()) 
-                    var patientId = backend.add_patient(patientForm.getFormData()) 
-                    backend.currentPatientId = patientId
+                    if (!patientForm.patientId) {
+                        var patientId = backend.add_patient(patientForm.getFormData()) 
+                        patientForm.patientId = patientId
+                        backend.currentPatientId = patientId
+                    }
+                    console.log("currentPatientId set")
                     if (savedPath) {
                         var result = backend.analyze_current_image()
                         if (result) {

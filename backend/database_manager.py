@@ -141,13 +141,15 @@ class DatabaseManager:
         self.ensure_connected()
         
         query = """
-        INSERT INTO mole_analyses (patient_id, image_path, melanoma_probability, diagnosis_text)
-        VALUES (%(patient_id)s, %(image_path)s, %(melanoma_probability)s, %(diagnosis_text)s)
+        INSERT INTO mole_analyses (patient_id, image_path, melanoma_probability, predictions, diagnosis_text)
+        VALUES (%(patient_id)s, %(image_path)s, %(melanoma_probability)s, %(predictions)s, %(diagnosis_text)s)
         """
         
         try:
             self.cursor.execute(query, analysis_data)
+            #self.connection.commit()
             analysis_id = self.cursor.lastrowid
+            print("Analysis added")
             
             # Add metadata if present
             if "metadata" in analysis_data and analysis_data["metadata"]:
@@ -156,7 +158,7 @@ class DatabaseManager:
             
             self.connection.commit()
             return analysis_id
-        except mysql.connector.Error as err:
+        except Exception as err:# mysql.connector.Error as err:
             self.connection.rollback()
             print(f"Error adding analysis: {err}")
             raise RuntimeError(f"Error adding analysis: {err}")
@@ -197,7 +199,7 @@ class DatabaseManager:
         
         query = """
         SELECT a.id, a.patient_id, a.image_path, a.melanoma_probability,
-               a.diagnosis_text, a.analyzed_at,
+               a.predictions, a.diagnosis_text, a.analyzed_at,
                GROUP_CONCAT(CONCAT(m.key_name, ':', m.value_text)) as metadata
         FROM mole_analyses a
         LEFT JOIN analysis_metadata m ON a.id = m.analysis_id
@@ -212,6 +214,9 @@ class DatabaseManager:
         # Convert datetime objects and process metadata
         for analysis in analyses:
             analysis['analyzed_at'] = analysis['analyzed_at'].isoformat()
+            pred = json.loads(analysis['predictions'])
+            analysis['predictions'] = pred
+            print(pred)
         
         return analyses
 
