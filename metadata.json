@@ -1,0 +1,5 @@
+{
+  "name": "SkinSight - Mole Analyzer",
+  "description": "A web application for doctors to analyze skin mole images for potential skin conditions using AI. Users can upload an image and receive a probabilistic assessment for various diagnoses, including melanoma.",
+  "requestFramePermissions": []
+}
