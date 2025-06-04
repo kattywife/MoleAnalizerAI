@@ -1,4 +1,3 @@
-```markdown
 # SkinSight API
 
 **Version:** 1.0 (Reflects API version, individual models have their own versions)
@@ -351,4 +350,3 @@ The accuracy of the model predictions heavily relies on consistent preprocessing
     *   Double-check the preprocessing steps, especially the metadata encoding and scaling (see section 11).
     *   Ensure the model architectures defined in `app/model_loader.py` exactly match the saved model files.
 *   **Permission Denied (Docker):** If Docker has issues accessing files, check file permissions or Docker volume mount configurations.
-```
