@@ -70,48 +70,29 @@ class BackendBridge(QObject):
         try:
             self.analysisStarted.emit()
 
-            # Get model prediction
-            # probabilities = {
-            #     "melanoma_probability": 0.2,
-            #     "benign_probability": 0.8
-            # # } 
-            # probabilities = self.model.predict(self._current_image_path)
-            # diagnosis, detail_text = self.model.get_prediction_text(probabilities)
-            # diagnosis = "High Risk - Urgent Medical Attention Required"
-            # detail_text = f"The analysis indicates a high risk of melanoma (50%). Immediate medical consultation is strongly recommended."
-        
             model_result = self.model.predict(self._current_image_path)
-            diagnosis, detail_text = self.model.get_prediction_text(model_result["predictions"]["Melanoma"])
             print(model_result)
-            result = {
-                "melanoma_probability": model_result["predictions"]["Melanoma"],
-                "predictions": model_result["predictions"],
-                "diagnosis": "Melanoma", #diagnosis,
-                "detail_text": detail_text,
-                "image_path": self._current_image_path
-            }
-            # result = {
-            #     "melanoma_probability": probabilities["melanoma_probability"],
-            #     "benign_probability": probabilities["benign_probability"],
-            #     "diagnosis": diagnosis,
-            #     "detail_text": detail_text,
-            #     "image_path": self._current_image_path
-            # }
-            
-            # If we have a current patient, save the analysis
-            # if self._current_patient_id:
-            #     analysis_data = {
-            #         "patient_id": self._current_patient_id,
-            #         "image_path": self._current_image_path,
-            #         "melanoma_probability": probabilities["melanoma_probability"],
-            #         "diagnosis_text": diagnosis
-            #         # "metadata": {
-            #         #     "detail_text": detail_text,
-            #         #     "benign_probability": str(probabilities["benign_probability"])
-            #         # }
-            #     }
-            #     self.db.add_analysis(analysis_data)
-                
+            result = {}
+
+            if(not model_result["is_mole"]):
+                result = {
+                    "image_path": self._current_image_path,
+                    "is_mole": model_result["is_mole"],
+                    "mole_detection_probability": model_result["mole_detection_probability"]
+                }
+            else:
+                diagnosis, detail_text = self.model.get_prediction_text(model_result["predictions"]["Melanoma"])
+                result = {
+                    "melanoma_probability": model_result["predictions"]["Melanoma"],
+                    "predictions": model_result["predictions"],
+                    "diagnosis": "Melanoma", #diagnosis,
+                    "detail_text": detail_text,
+                    "image_path": self._current_image_path,
+                    "is_mole": model_result["is_mole"],
+                    "mole_detection_probability": model_result["mole_detection_probability"]
+                }
+            print("Resultat: ", result)
+                            
             self._current_result = result
             self.analysisComplete.emit(result)
             return result

@@ -9,24 +9,24 @@ import requests
 import json
 
 class ModelHandler:
-    # def __init__(self):
-    #     # Load config to get model path
-    #     config_path = Path(__file__).parent.parent / "config.json"
-    #     try:
-    #         with open(config_path, "r") as f:
-    #             config = json.load(f)
-    #             models_dir = config["application"]["models_dir"]
-    #             model_file = config["application"]["model_file"]
-    #     except Exception as e:
-    #         raise RuntimeError(f"Error loading config: {e}")
+    def __init__(self):
+        # Load config to get model path
+        config_path = Path(__file__).parent.parent / "config.json"
+        try:
+            with open(config_path, "r") as f:
+                config = json.load(f)
+                self.api_url = config["application"]["api_url"]
+                model_file = config["application"]["model_file"]
+        except Exception as e:
+            raise RuntimeError(f"Error loading config: {e}")
 
-    #     # Construct absolute model path
-    #     model_path = Path(__file__).parent.parent / models_dir / model_file
-    #     if not model_path.exists():
-    #         raise FileNotFoundError(f"Model file not found at {model_path}")
+        # Construct absolute model path
+        #model_path = Path(__file__).parent.parent / models_dir / model_file
+        #if not model_path.exists():
+        #    raise FileNotFoundError(f"Model file not found at {model_path}")
             
-    #     self.model = tf.keras.models.load_model(str(model_path))
-    #     self.image_size = (224, 224)  # Standard input size for many CNN models
+        #self.model = tf.keras.models.load_model(str(model_path))
+        self.image_size = (224, 224)  # Standard input size for many CNN models
         
     # def preprocess_image(self, image_path: str) -> np.ndarray:
     #     """Preprocesses an image for model prediction."""
@@ -71,7 +71,7 @@ class ModelHandler:
                 "metadata": json.dumps({"age": 30, "sex": "Male", "location": "Trunk"})
             }   #'{"metadata": {"age": 30, "sex": "Male", "location": "Trunk"} }'
             response = requests.post(
-                "http://0.0.0.0:8000/predict", 
+                self.api_url, 
                 files = image_file,
                 data = payload_metadata
             )

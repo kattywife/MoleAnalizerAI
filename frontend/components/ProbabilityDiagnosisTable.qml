@@ -166,7 +166,7 @@ Rectangle {
                                 border.width: 1.5
                                 radius: implicitHeight / 2
                                 Text {
-                                    text: qsTr(Number(modelData.probability * 100).toString() + "%")
+                                    text: qsTr(Number(modelData.probability * 100).toFixed(1).toString() + "%")
                                     anchors.centerIn: parent
                                     font.family: App.Constants.fontFamily
                                     font.pixelSize: 14; font.bold: true

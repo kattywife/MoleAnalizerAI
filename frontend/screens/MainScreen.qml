@@ -199,10 +199,20 @@ Rectangle {
                     // Обновляем свойства в mainScreenRoot для передачи в AnalysisResultsWorkspace
                     mainScreenRoot.currentAnalyzedImageSource = imgSrc;
                     mainScreenRoot.currentAnalyzedImageName = imgName; // Или более осмысленное имя
-                    //mainScreenRoot.currentMelanomaProbability = backend.get_current_analysis_result().melanoma_probability * 100 //randomProbability;
+                    
                     var modelResult = backend.get_current_analysis_result()
                     console.log(modelResult)
-                    mainScreenRoot.currentMelanomaProbability = modelResult.melanoma_probability * 100 //randomProbability;
+                    if(!modelResult.is_mole){
+                        warningPopup.show(
+                            "warning",
+                            "Ошбика в обработке изображения",
+                            "Загруженное изображение не похоже на родинку на коже. Пожалуйста, загрузите четкое изображение родинки крупным планом для анализа."
+                        )
+                        return
+                    }
+                    console.log("After show")
+
+                    mainScreenRoot.currentMelanomaProbability = modelResult.melanoma_probability * 100 
                     mainScreenRoot.modelProbabilities = mainScreenRoot.modelPredictionsToArray(modelResult.predictions)//modelProbabilitiesData
 
                     // Переключаем Loader на компонент с результатами
@@ -259,5 +269,13 @@ Rectangle {
                 Layout.fillHeight: parent
             }
         }
+    }
+
+    Components.MessagePopup {
+        id: warningPopup
+        //popupType: "warning"
+        //titleText: "Ошбика в обработке изображения"
+        // messageText: "Загруженное изображение не похоже на родинку на коже. Пожалуйста, загрузите четкое изображение родинки крупным планом для анализа."
+        onClosedByUser: console.log("Popup closed by user")
     }
 }

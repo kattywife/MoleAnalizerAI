@@ -370,16 +370,4 @@ Rectangle {
             backend.currentPatientId = patientData.id
         }
     }
-
-    // Dialog {
-    //     id: errorDialog
-    //     title: qsTr("Ошибка")
-    //     standardButtons: Dialog.Ok
-    //     property alias text: errorText.text
-        
-    //     Text {
-    //         id: errorText
-    //         wrapMode: Text.WordWrap
-    //     }
-    // }
 }

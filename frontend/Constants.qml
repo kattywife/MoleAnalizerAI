@@ -72,8 +72,11 @@ QtObject {
     readonly property color tableHeaderText: textPrimary
     readonly property color tableCellBorder: "#863A1A"   // Коричневая рамка ячейки (#863A1A)
 
-
     readonly property color headerPillBackground: "#FBECEC" // Light pinkish for table headers
+
+    readonly property color infoColor: "#2196F3"    // Blue
+    readonly property color warningColor: "#FF9800" // Orange
+    readonly property color errorColor: "#F44336"   // Red
     
     // --- Дополнительные цвета из скриншота (пока не используются) ---
     // readonly property color unusedRed: "#BE2121"
