@@ -6,179 +6,293 @@ from pydantic import ValidationError as PydanticValidationError
 import json
 import logging
 import time
-from typing import Optional # Import Optional
+from typing import Optional, AsyncGenerator # For lifespan, if used
+from contextlib import asynccontextmanager # For lifespan, if used
 
-import schemas, preprocessing, model_loader
+# Assuming your Pydantic models are in schemas.py
+import schemas # Import the whole module
+import preprocessing
+import model_loader
+
+# Import all necessary config variables
 from config import (
-    LOG_LEVEL, MODEL_VERSION, IMAGE_ONLY_MODEL_VERSION, # Import new version
-    CLASSES, INTERNAL_CLASSES, CLASS_NAME_MAPPING, # Ensure these are available
-    ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_MB # Keep these from config
+    LOG_LEVEL, MODEL_VERSION, IMAGE_ONLY_MODEL_VERSION, NOT_A_MOLE_MESSAGE,
+    SKIN_CLASS_NAME_MAPPING, SKIN_CLASSES_INTERNAL,
+    ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_MB,
+    MOLE_DETECTOR_CLASSES, MOLE_DETECTOR_THRESHOLD # Mole detector config
 )
-
 
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="SkinSight API", version="1.0", description="...")
+# --- Lifespan or @app.on_event for startup/shutdown ---
+# If using lifespan (recommended):
+# @asynccontextmanager
+# async def lifespan(app_instance: FastAPI):
+#     logger.info("Application startup via lifespan manager...")
+#     try:
+#         model_loader.load_models()
+#         # Add detailed checks for each model loading status here
+#         if model_loader.ml_model_mole_detector is None: logger.critical("CRITICAL: Mole detector failed to load.")
+#         else: logger.info("Mole detector loaded.")
+#         if model_loader.ml_model_multi_input_skin is None: logger.warning("Multi-input skin classifier not loaded.")
+#         else: logger.info("Multi-input skin classifier loaded.")
+#         if model_loader.ml_model_image_only_skin is None: logger.warning("Image-only skin classifier not loaded.")
+#         else: logger.info("Image-only skin classifier loaded.")
+#         logger.info("ML Models loading process complete.")
+#     except Exception as e:
+#         logger.critical(f"Critical failure during model loading on startup: {e}", exc_info=True)
+#         raise RuntimeError(f"Application startup failed: {e}")
+#     yield
+#     logger.info("Application shutdown via lifespan manager...")
+#     model_loader.ml_model_mole_detector = None
+#     model_loader.ml_model_multi_input_skin = None
+#     model_loader.ml_model_image_only_skin = None
+#
+# app = FastAPI(
+#     title="SkinSight API",
+#     version="1.1",
+#     description="API for skin lesion analysis with mole pre-detection.",
+#     lifespan=lifespan
+# )
+
+# OR if still using @app.on_event (as per your provided context):
+app = FastAPI(title="SkinSight API", version="1.1", description="API for skin lesion analysis with mole pre-detection.")
 
 @app.on_event("startup")
 async def startup_event():
     logger.info("Application startup...")
     try:
-        model_loader.load_models() # Changed from load_model
-        logger.info("ML Models loaded (or attempted to load).")
+        model_loader.load_models()
+        if model_loader.ml_model_mole_detector is None:
+            logger.critical("CRITICAL: Mole detector model failed to load. Application will not function correctly.")
+        else: logger.info("Mole detector model loaded.")
+        if model_loader.ml_model_multi_input_skin is None:
+            logger.warning("Multi-input skin classifier not loaded (optional or misconfigured).")
+        else: logger.info("Multi-input skin classifier model loaded.")
+        if model_loader.ml_model_image_only_skin is None:
+            logger.warning("Image-only skin classifier not loaded (optional or misconfigured).")
+        else: logger.info("Image-only skin classifier model loaded.")
+        logger.info("ML Models loading process complete.")
     except Exception as e:
         logger.critical(f"Critical failure during model loading on startup: {e}", exc_info=True)
         raise RuntimeError(f"Application startup failed: Could not load critical models. {e}")
 
-# ... (shutdown_event, exception handlers, middleware, root, health_check remain mostly the same) ...
-# Adjust health_check if needed to report status of both models
+# --- Exception Handlers & Middleware (ensure these are defined or imported if used) ---
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    logger.warning(f"Validation error for request {request.url.path}: {exc.errors()}")
+    error_details = []
+    for error in exc.errors():
+        field = " -> ".join(map(str, error["loc"]))
+        if error["loc"] and error["loc"][0] == 'body':
+            field = " -> ".join(map(str, error["loc"][1:]))
+        error_details.append(schemas.ErrorDetail(field=field, message=error["msg"]))
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=schemas.ErrorResponse(
+            error=schemas.ErrorContent(code="VALIDATION_ERROR", message="Input validation failed.", details=error_details)
+        ).dict(exclude_none=True)
+    )
+
+async def http_error_handler(request: Request, exc: HTTPException):
+    logger.error(f"HTTPException for request {request.url.path}: {exc.status_code} - {exc.detail}")
+    error_code, error_message, details_obj = "UNKNOWN_ERROR", str(exc.detail), None
+    if isinstance(exc.detail, dict):
+        error_code = exc.detail.get("code", error_code)
+        error_message = exc.detail.get("message", error_message)
+        if "field" in exc.detail or "value_provided" in exc.detail:
+             details_obj = schemas.ErrorDetail(field=exc.detail.get("field"), value_provided=exc.detail.get("value_provided"), message=exc.detail.get("details_message"))
+    elif isinstance(exc.detail, str):
+        if exc.status_code == status.HTTP_400_BAD_REQUEST: error_code = "INVALID_INPUT"
+        elif exc.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR:
+            error_code = "INTERNAL_SERVER_ERROR"
+            error_message = "An unexpected error occurred while processing the request. Please try again later."
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=schemas.ErrorResponse(error=schemas.ErrorContent(code=error_code, message=error_message, details=details_obj)).dict(exclude_none=True)
+    )
+app.add_exception_handler(HTTPException, http_error_handler)
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    logger.info(f"Request: {request.method} {request.url.path} - Status: {response.status_code} - Duration: {process_time:.4f}s")
+    return response
+
+# --- API Endpoints ---
+@app.get("/", tags=["General"])
+async def read_root():
+    return {"message": "Welcome to the SkinSight API. Use the /predict endpoint to analyze images."}
+
 @app.get("/health", tags=["General"])
 async def health_check():
-    multi_loaded = model_loader.ml_model_multi_input is not None
-    img_only_loaded = model_loader.ml_model_image_only is not None
-    
-    if multi_loaded: # At least the primary model must be loaded
-        return {
-            "status": "healthy",
-            "multi_input_model_loaded": multi_loaded,
-            "image_only_model_loaded": img_only_loaded
+    detector_loaded = model_loader.ml_model_mole_detector is not None
+    multi_skin_loaded = model_loader.ml_model_multi_input_skin is not None
+    img_only_skin_loaded = model_loader.ml_model_image_only_skin is not None
+    is_healthy = detector_loaded # Mole detector is critical
+    return JSONResponse(
+        status_code=status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={
+            "status": "healthy" if is_healthy else "unhealthy",
+            "mole_detector_model_loaded": detector_loaded,
+            "multi_input_skin_model_loaded": multi_skin_loaded,
+            "image_only_skin_model_loaded": img_only_skin_loaded,
+            "reason": "Mole detector is critical and not loaded." if not detector_loaded else None
         }
-    else:
-        logger.error("Health check failed: Multi-input model not loaded.")
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={
-                "status": "unhealthy",
-                "multi_input_model_loaded": multi_loaded,
-                "image_only_model_loaded": img_only_loaded,
-                "reason": "Critical model (multi-input) not loaded"
-            }
-        )
-
+    )
 
 @app.post("/predict",
-          response_model=schemas.PredictionResponse,
-          # ... (responses remain the same) ...
+          responses={
+              status.HTTP_200_OK: {
+                  "description": "Successful prediction (either mole classification or 'not a mole' determination).",
+                  "content": {
+                      "application/json": {
+                          "examples": {
+                              "mole_classification": {
+                                  "summary": "Mole Classification Result",
+                                  "value": {
+                                      "predictions": {"Melanoma": 0.1, "Nevus": 0.9},
+                                      "model_version": "1.0.2",
+                                      "mole_detection_probability": 0.9705, # Added
+                                      "is_mole": True # Added
+                                  }
+                              },
+                              "not_a_mole": {
+                                  "summary": "Not a Mole Result",
+                                  "value": {
+                                      "message": NOT_A_MOLE_MESSAGE,
+                                      "is_mole": False,
+                                      "model_used": "mole_detector",
+                                      "mole_detection_probability": 0.3822 # Added
+                                  }
+                              }
+                          }
+                      }
+                  }
+              },
+              status.HTTP_400_BAD_REQUEST: {"model": schemas.ErrorResponse},
+              status.HTTP_422_UNPROCESSABLE_ENTITY: {"model": schemas.CustomHTTPValidationError if hasattr(schemas, 'CustomHTTPValidationError') else schemas.ErrorResponse },
+              status.HTTP_500_INTERNAL_SERVER_ERROR: {"model": schemas.ErrorResponse},
+              status.HTTP_503_SERVICE_UNAVAILABLE: {"model": schemas.ErrorResponse}
+          },
           tags=["Analysis"])
 async def predict_skin_lesion(
     image_file: UploadFile = File(..., description="Image of the skin lesion (JPEG or PNG). Max 10MB."),
-    metadata: Optional[str] = Form(None, alias="metadata", description='OPTIONAL JSON string with patient metadata.') # Made Optional, default None
+    metadata: Optional[str] = Form(None, alias="metadata", description='OPTIONAL JSON string with patient metadata.')
 ):
-    logger.info(f"Received prediction request. Image: {image_file.filename}, Metadata (raw): {metadata if metadata else 'Not provided'}")
+    logger.info(f"Received prediction request. Image: {image_file.filename}, Metadata: {'Provided' if metadata else 'Not provided'}")
 
-    # --- Image Validation (common for both paths) ---
+    # --- Initial Image Validation (common) ---
     if image_file.size > MAX_FILE_SIZE_MB * 1024 * 1024:
-        # ... (error handling as before) ...
-        logger.warning(f"Image file too large: {image_file.size} bytes. Max: {MAX_FILE_SIZE_MB}MB")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "FILE_TOO_LARGE", "message": f"Image file size exceeds limit of {MAX_FILE_SIZE_MB}MB.", "field": "image_file"})
     if image_file.content_type not in ALLOWED_IMAGE_TYPES:
-        # ... (error handling as before) ...
-        logger.warning(f"Invalid image content type: {image_file.content_type}.")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "INVALID_FILE_TYPE", "message": f"Invalid image file type. Allowed types: {', '.join(ALLOWED_IMAGE_TYPES)}.", "field": "image_file"})
 
-    # --- Preprocess Image (common for both paths) ---
-    try:
-        image_bytes = await image_file.read()
-        logger.debug(f"Image file read, size: {len(image_bytes)} bytes.")
-        preprocessed_image = preprocessing.load_and_preprocess_image_from_bytes(image_bytes)
-        logger.debug("Image preprocessed successfully.")
-    except ValueError as e:
-        logger.error(f"Image preprocessing error: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "PREPROCESSING_ERROR", "message": str(e)})
-    except Exception as e:
-        logger.error(f"Unexpected error during image preprocessing: {e}", exc_info=True)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "INTERNAL_SERVER_ERROR", "message": "An unexpected error occurred during image preprocessing."})
+    image_bytes = await image_file.read() # Read once
 
-    raw_predictions = None
-    used_model_version = None
+    # Variable to store mole detection probability
+    mole_detection_prob_value: Optional[float] = None
+
+    # --- Step 1: Mole Detection ---
+    try:
+        logger.debug("Preprocessing image for mole detector...")
+        preprocessed_image_for_detector = preprocessing.preprocess_image_for_mole_detector(image_bytes)
+        
+        logger.debug("Running mole detection model...")
+        mole_detector_model = model_loader.get_mole_detector_model()
+        # Ensure input key matches mole detector model's expectation (e.g., 'input_layer')
+        mole_detector_input_data = {'input_layer': preprocessed_image_for_detector}
+        detector_prediction_probs = mole_detector_model.predict(mole_detector_input_data)
+        
+        mole_detection_prob_value = float(f"{detector_prediction_probs[0][0]:.4f}") # Format and store
+        logger.info(f"Mole detection probability: {mole_detection_prob_value}")
+
+        is_mole = mole_detection_prob_value > MOLE_DETECTOR_THRESHOLD
+        predicted_detector_label = MOLE_DETECTOR_CLASSES[1] if is_mole else MOLE_DETECTOR_CLASSES[0]
+        logger.info(f"Mole detector classified as: {predicted_detector_label}")
+
+        if not is_mole:
+            logger.info("Image classified as 'not_mole'. Returning early.")
+            return schemas.NotAMoleResponse(
+                message=NOT_A_MOLE_MESSAGE,
+                mole_detection_probability=mole_detection_prob_value
+            )
+
+    except RuntimeError as e:
+         logger.critical(f"Mole detector model error: {e}", exc_info=True)
+         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"code": "MODEL_NOT_READY", "message": "The mole detection model is not available."})
+    except ValueError as e:
+        logger.error(f"Mole detector preprocessing error: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "PREPROCESSING_ERROR_DETECTOR", "message": str(e)})
+    except Exception as e:
+        logger.error(f"Unexpected error during mole detection: {e}", exc_info=True)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "INTERNAL_SERVER_ERROR_DETECTOR", "message": "Error during mole detection."})
+
+    # --- Step 2: Skin Condition Classification (if identified as a mole) ---
+    logger.info(f"Image classified as 'mole' (Prob: {mole_detection_prob_value}). Proceeding to skin condition classification.")
+    try:
+        preprocessed_image_for_skin_classifier = preprocessing.preprocess_image_for_skin_classifier(image_bytes)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "PREPROCESSING_ERROR_SKIN", "message": str(e)})
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "INTERNAL_SERVER_ERROR_SKIN_PREPROC", "message": "Error during skin image preprocessing."})
+
+    raw_skin_predictions = None
+    used_skin_model_version = None
 
     if metadata:
-        # --- Path for prediction WITH METADATA ---
-        logger.info("Processing with metadata.")
         try:
             metadata_dict = json.loads(metadata)
             parsed_metadata = schemas.MetadataBase(**metadata_dict)
-            logger.debug(f"Parsed and validated metadata: {parsed_metadata.dict()}")
-        except json.JSONDecodeError:
-            # ... (error handling as before for metadata.json) ...
-            logger.warning(f"Invalid JSON format for metadata: {metadata}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "INVALID_JSON_METADATA", "message": "Metadata is not a valid JSON string.", "field": "metadata"})
+            preprocessed_metadata_values = preprocessing.preprocess_metadata(parsed_metadata)
+        except json.JSONDecodeError: raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "INVALID_JSON_METADATA", "message": "Metadata is not a valid JSON string.", "field": "metadata"})
         except PydanticValidationError as e:
-            # ... (error handling as before for metadata content) ...
-            logger.warning(f"Metadata validation failed: {e.errors()}", exc_info=True)
             error_details = [schemas.ErrorDetail(field="metadata." + ".".join(map(str, err['loc'])), value_provided=err.get('input', str(err.get('input'))), message=err['msg']) for err in e.errors()]
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"code": "INVALID_INPUT", "message": "Metadata validation failed.", "details": error_details[0] if len(error_details) == 1 else error_details})
-
-        try:
-            preprocessed_metadata_values = preprocessing.preprocess_metadata(parsed_metadata)
-            logger.debug("Metadata preprocessed successfully.")
-        except Exception as e: # Catch any error from metadata preprocessing
-            logger.error(f"Metadata preprocessing error: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "METADATA_PREPROCESSING_FAILURE", "message": f"Failed to preprocess metadata: {e}"})
-
+        except Exception as e: raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "METADATA_PREPROCESSING_FAILURE", "message": f"Failed to preprocess metadata: {e}"})
 
         model_input_multi = {
-            'image_input': preprocessed_image,
-            'metadata_input': preprocessed_metadata_values
+            'image_input': preprocessed_image_for_skin_classifier, # Ensure this key matches model
+            'metadata_input': preprocessed_metadata_values     # Ensure this key matches model
         }
-        
         try:
-            logger.debug("Sending data to multi-input model for prediction...")
-            model_multi = model_loader.get_multi_input_model() # Get the specific model
-            raw_predictions = model_multi.predict(model_input_multi)
-            used_model_version = MODEL_VERSION
-            logger.debug(f"Raw multi-input model predictions: {raw_predictions}")
-        except RuntimeError as e: # Catch model not loaded specifically
-             logger.critical(f"Multi-input model prediction error - Model not available: {e}", exc_info=True)
-             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"code": "MODEL_NOT_READY", "message": "The multi-input analysis model is not ready."})
-        except Exception as e:
-            logger.error(f"Error during multi-input model prediction: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "INTERNAL_SERVER_ERROR", "message": "Error during multi-input model processing."})
-
-    else:
-        # --- Path for prediction IMAGE-ONLY ---
-        logger.info("Processing image-only.")
+            model_multi_skin = model_loader.get_multi_input_skin_model()
+            raw_skin_predictions = model_multi_skin.predict(model_input_multi)
+            used_skin_model_version = MODEL_VERSION
+        except RuntimeError as e: raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"code": "MODEL_NOT_READY", "message": "Multi-input skin model not ready."})
+        except Exception as e: raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "INTERNAL_SERVER_ERROR", "message": "Error during multi-input skin model processing."})
+    else: # Image-only skin classification
         try:
-            logger.debug("Sending data to image-only model for prediction...")
-            model_image_only = model_loader.get_image_only_model() # Get the specific model
-            # Image-only model expects just the image array, not a dict (usually)
-            # Check your image-only model's expected input format.
-            # If it's a Keras model built with a named Input layer, it might expect a dict: {'image_input': preprocessed_image}
-            # If it's a simpler sequential model or functional model taking raw tensor, then just preprocessed_image
-            
-            # Assuming image_input as key if build_image_only_model_definition used a named Input layer
-            # Otherwise, it might just be: raw_predictions = model_image_only.predict(preprocessed_image)
-            raw_predictions = model_image_only.predict({'image_input': preprocessed_image})
-            used_model_version = IMAGE_ONLY_MODEL_VERSION # Use the specific version for this model
-            logger.debug(f"Raw image-only model predictions: {raw_predictions}")
-        except RuntimeError as e: # Catch model not loaded specifically
-             logger.critical(f"Image-only model prediction error - Model not available: {e}", exc_info=True)
-             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"code": "MODEL_NOT_READY", "message": "The image-only analysis model is not ready."})
-        except Exception as e:
-            logger.error(f"Error during image-only model prediction: {e}", exc_info=True)
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "INTERNAL_SERVER_ERROR", "message": "Error during image-only model processing."})
+            model_image_only_skin = model_loader.get_image_only_skin_model()
+            # Ensure this key matches model
+            raw_skin_predictions = model_image_only_skin.predict(
+                {'image_input': preprocessed_image_for_skin_classifier}
+            )
+            used_skin_model_version = IMAGE_ONLY_MODEL_VERSION
+        except RuntimeError as e: raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail={"code": "MODEL_NOT_READY", "message": "Image-only skin model not ready."})
+        except Exception as e: raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "INTERNAL_SERVER_ERROR", "message": "Error during image-only skin model processing."})
 
-    # --- Format and return result (common for both paths) ---
-    if raw_predictions is None or len(raw_predictions[0]) != len(INTERNAL_CLASSES):
-        logger.error(f"Model output issue. Predictions: {raw_predictions}, Expected classes: {len(INTERNAL_CLASSES)}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "MODEL_OUTPUT_MISMATCH", "message": "Model output issue."})
+    if raw_skin_predictions is None or len(raw_skin_predictions[0]) != len(SKIN_CLASSES_INTERNAL):
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail={"code": "MODEL_OUTPUT_MISMATCH", "message": "Skin classifier output issue."})
 
     predictions_dict = {
-        CLASS_NAME_MAPPING[INTERNAL_CLASSES[i]]: float(f"{raw_predictions[0][i]:.3f}") # Or :.4f from your test
-        for i in range(len(INTERNAL_CLASSES))
+        SKIN_CLASS_NAME_MAPPING[SKIN_CLASSES_INTERNAL[i]]: float(f"{raw_skin_predictions[0][i]:.3f}")
+        for i in range(len(SKIN_CLASSES_INTERNAL))
     }
-
-    logger.info(f"Prediction successful using model version {used_model_version}. Results: {predictions_dict}")
+    logger.info(f"Skin classification successful (model: {used_skin_model_version}). Results: {predictions_dict}")
+    
     return schemas.PredictionResponse(
         predictions=predictions_dict,
-        model_version=used_model_version
+        model_version=used_skin_model_version,
+        mole_detection_probability=mole_detection_prob_value
+        # is_mole=True will be set by default in Pydantic model schemas.PredictionResponse
     )
 
-# if __name__ == "__main__": (keep this for local dev if you use python app/main.py)
-
 if __name__ == "__main__":
+    logger.info("Starting Uvicorn server for local development (via __main__)...")
     import uvicorn
-    # This is for local development. For production, use Gunicorn with Uvicorn workers.
-    logger.info("Starting Uvicorn server for local development...")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8000, log_level=LOG_LEVEL.lower() if isinstance(LOG_LEVEL, str) else "info")
