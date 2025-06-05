@@ -22,7 +22,8 @@ MODEL_VERSION = "1.0.2"
 METADATA_FEATURES_COUNT = 3
 
 # Image-only skin condition classifier
-IMAGE_ONLY_MODEL_PATH = os.getenv("IMAGE_ONLY_MODEL_PATH", os.path.join(_PROJECT_ROOT, "model", "model_epoch_06_val_loss_0.94_images.h5"))
+# IMAGE_ONLY_MODEL_PATH = os.getenv("IMAGE_ONLY_MODEL_PATH", os.path.join(_PROJECT_ROOT, "model", "model_epoch_06_val_loss_0.94_images.h5"))
+IMAGE_ONLY_MODEL_PATH = os.getenv("IMAGE_ONLY_MODEL_PATH", os.path.join(_PROJECT_ROOT, "model", "skin_lesion_model_image.h5"))
 IMAGE_ONLY_MODEL_VERSION = "1.0.0_img_only"
 
 # Common settings for skin condition classifiers

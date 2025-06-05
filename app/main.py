@@ -2,10 +2,13 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, status, Request
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError as PydanticValidationError
 import json
 import logging
 import time
+
 from typing import Optional, AsyncGenerator # For lifespan, if used
 from contextlib import asynccontextmanager # For lifespan, if used
 
@@ -15,7 +18,7 @@ import preprocessing
 import model_loader
 
 # Import all necessary config variables
-from config import (
+from .config import (
     LOG_LEVEL, MODEL_VERSION, IMAGE_ONLY_MODEL_VERSION, NOT_A_MOLE_MESSAGE,
     SKIN_CLASS_NAME_MAPPING, SKIN_CLASSES_INTERNAL,
     ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_MB,
@@ -25,39 +28,22 @@ from config import (
 logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# --- Lifespan or @app.on_event for startup/shutdown ---
-# If using lifespan (recommended):
-# @asynccontextmanager
-# async def lifespan(app_instance: FastAPI):
-#     logger.info("Application startup via lifespan manager...")
-#     try:
-#         model_loader.load_models()
-#         # Add detailed checks for each model loading status here
-#         if model_loader.ml_model_mole_detector is None: logger.critical("CRITICAL: Mole detector failed to load.")
-#         else: logger.info("Mole detector loaded.")
-#         if model_loader.ml_model_multi_input_skin is None: logger.warning("Multi-input skin classifier not loaded.")
-#         else: logger.info("Multi-input skin classifier loaded.")
-#         if model_loader.ml_model_image_only_skin is None: logger.warning("Image-only skin classifier not loaded.")
-#         else: logger.info("Image-only skin classifier loaded.")
-#         logger.info("ML Models loading process complete.")
-#     except Exception as e:
-#         logger.critical(f"Critical failure during model loading on startup: {e}", exc_info=True)
-#         raise RuntimeError(f"Application startup failed: {e}")
-#     yield
-#     logger.info("Application shutdown via lifespan manager...")
-#     model_loader.ml_model_mole_detector = None
-#     model_loader.ml_model_multi_input_skin = None
-#     model_loader.ml_model_image_only_skin = None
-#
-# app = FastAPI(
-#     title="SkinSight API",
-#     version="1.1",
-#     description="API for skin lesion analysis with mole pre-detection.",
-#     lifespan=lifespan
-# )
-
 # OR if still using @app.on_event (as per your provided context):
 app = FastAPI(title="SkinSight API", version="1.1", description="API for skin lesion analysis with mole pre-detection.")
+
+
+# Configure CORS
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins, # Allows specific origins
+    allow_credentials=True,
+    allow_methods=["*"], # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"], # Allows all headers
+)
 
 @app.on_event("startup")
 async def startup_event():
