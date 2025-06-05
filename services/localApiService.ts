@@ -1,12 +1,22 @@
 
 import type { GeminiApiResponse, GeminiApiPredictionScores } from '../types';
 
+const getApiUrl = (): string => {
+  const apiUrl = process.env.API_URL;
+  if (!apiUrl) {
+    console.error("API_URL environment variable not set.");
+    throw new Error("API URL not configured. Please set the API_URL environment variable.");
+  }
+  return apiUrl;
+};
+
 export const analyzeImageWithLocalApi = async (file: File): Promise<GeminiApiResponse> => {
   const formData = new FormData();
   formData.append('image_file', file);
 
   try {
-    const response = await fetch('http://localhost:8000/predict', {
+    const apiUrl = getApiUrl();
+    const response = await fetch(apiUrl, {
       method: 'POST',
       body: formData,
     });
