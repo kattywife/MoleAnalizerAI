@@ -18,7 +18,7 @@ import preprocessing
 import model_loader
 
 # Import all necessary config variables
-from .config import (
+from config import (
     LOG_LEVEL, MODEL_VERSION, IMAGE_ONLY_MODEL_VERSION, NOT_A_MOLE_MESSAGE,
     SKIN_CLASS_NAME_MAPPING, SKIN_CLASSES_INTERNAL,
     ALLOWED_IMAGE_TYPES, MAX_FILE_SIZE_MB,
