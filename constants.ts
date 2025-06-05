@@ -1,14 +1,12 @@
 
-export const MODEL_NAME = 'gemini-2.5-flash-preview-04-17';
-
 export const DIAGNOSIS_CLASSES = {
   MEL: { name: 'Melanoma', code: 'MEL' as const },
-  NV: { name: 'Pigmented Nevus', code: 'NV' as const },
-  BCC: { name: 'Basal Cell Carcinoma', code: 'BCC' as const },
-  AK: { name: 'Actinic Keratosis', code: 'AK' as const },
-  BKL: { name: 'Benign Keratosis', code: 'BKL' as const },
+  NV: { name: 'Nevus', code: 'NV' as const },
+  BCC: { name: 'Basal cell carcinoma', code: 'BCC' as const },
+  AK: { name: 'Actinic keratosis', code: 'AK' as const },
+  BKL: { name: 'Benign keratosis-like lesions', code: 'BKL' as const },
   DF: { name: 'Dermatofibroma', code: 'DF' as const },
-  VASC: { name: 'Vascular Lesions', code: 'VASC' as const },
+  VASC: { name: 'Vascular lesions', code: 'VASC' as const },
 };
 
 export type DiagnosisCode = keyof typeof DIAGNOSIS_CLASSES;
@@ -31,8 +29,10 @@ export const UI_TEXT = {
   probability: "Probability",
   diagnosis: "Diagnosis",
   errorPrefix: "Error:",
-  geminiError: "An error occurred while analyzing the image. This could be due to network issues, API limits, or the image content. Please try again later or with a different image.",
+  localApiError: "An error occurred while analyzing the image with the local analysis service. This could be due to network issues or an issue with the local server. Please try again later or with a different image. Check the console for more details.",
   fileReadError: "Error reading file. Please try a different image.",
   fileTypeNotSupported: "File type not supported. Please upload a JPG, PNG, or WEBP image.",
-  noApiKey: "API Key is not configured. The application cannot contact the analysis service. Please ensure the API_KEY environment variable is set.",
+  notAMoleModalTitle: "Image Not a Mole",
+  notAMoleModalMessage: "The uploaded image does not appear to be a skin mole. Please upload a clear, close-up image of a mole for analysis.",
+  modalOkButton: "OK",
 };

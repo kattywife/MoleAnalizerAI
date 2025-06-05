@@ -3,9 +3,10 @@ import React, { useState, useCallback } from 'react';
 import { Header } from './components/Header';
 import { ImageUploadScreen } from './components/ImageUploadScreen';
 import { ResultsScreen } from './components/ResultsScreen';
-import { analyzeImageWithGemini, fileToGenerativePart } from './services/geminiService';
+import { Modal } from './components/common/Modal';
+import { analyzeImageWithLocalApi } from './services/localApiService'; // Updated import
 import type { DiagnosisResult, GeminiApiResponse } from './types';
-import { DIAGNOSIS_CLASSES, UI_TEXT, MODEL_NAME } from './constants';
+import { DIAGNOSIS_CLASSES, UI_TEXT } from './constants';
 
 enum View {
   Upload,
@@ -20,6 +21,7 @@ const App: React.FC = () => {
   const [melanomaRiskPercent, setMelanomaRiskPercent] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNotAMoleModal, setShowNotAMoleModal] = useState<boolean>(false);
 
   const resetToUploadScreen = useCallback(() => {
     setCurrentView(View.Upload);
@@ -29,59 +31,54 @@ const App: React.FC = () => {
     setMelanomaRiskPercent(null);
     setError(null);
     setIsLoading(false);
+    setShowNotAMoleModal(false);
   }, []);
 
   const handleImageUpload = useCallback(async (file: File) => {
-    if (!process.env.API_KEY) {
-        setError(UI_TEXT.noApiKey);
-        setIsLoading(false);
-        return;
-    }
     setIsLoading(true);
     setError(null);
     setUploadedImageFile(file);
     setUploadedImagePreview(URL.createObjectURL(file));
 
     try {
-      const imagePart = await fileToGenerativePart(file);
-      
-      const prompt = `You are a dermatological AI assistant. Analyze the provided image of a skin mole.
-Return a JSON object with estimated probabilities for the following skin conditions.
-The keys in the JSON object should be the short codes: ${Object.keys(DIAGNOSIS_CLASSES).join(', ')}.
-The values should be probabilities as numbers between 0 and 1 (e.g., 0.87 for 87%).
-Example JSON format:
-{
-  "MEL": 0.01,
-  "NV": 0.87,
-  "BCC": 0.43,
-  "AK": 0.10,
-  "BKL": 0.23,
-  "DF": 0.14,
-  "VASC": 0.05
-}
-Ensure the output is ONLY the JSON object. Do not include any other text or markdown formatting.`;
+      // Call the new local API service
+      const rawResults: GeminiApiResponse = await analyzeImageWithLocalApi(file);
 
-      const rawResults = await analyzeImageWithGemini(prompt, imagePart);
+      if (rawResults.is_mole === false) {
+        setIsLoading(false);
+        setShowNotAMoleModal(true);
+        // Do not clear uploadedImageFile here, allow it to be cleared in closeNotAMoleModal or if a new upload starts
+        return;
+      }
 
       const parsedResults: DiagnosisResult[] = [];
       let melRisk = 0;
+      const predictionScores = rawResults.predictions;
 
-      for (const key in rawResults) {
-        if (Object.prototype.hasOwnProperty.call(DIAGNOSIS_CLASSES, key)) {
-          const code = key as keyof typeof DIAGNOSIS_CLASSES;
-          const probability = rawResults[code] ?? 0;
+      if (!predictionScores || typeof predictionScores !== 'object') {
+        console.error("API Response 'predictions' field is missing or not an object:", rawResults);
+        throw new Error("The 'predictions' field is missing or invalid in the API response.");
+      }
+      
+      for (const diagnosisCode in DIAGNOSIS_CLASSES) {
+        if (Object.prototype.hasOwnProperty.call(DIAGNOSIS_CLASSES, diagnosisCode)) {
+          const code = diagnosisCode as keyof typeof DIAGNOSIS_CLASSES;
+          const diagnosisInfo = DIAGNOSIS_CLASSES[code];
+          const diagnosisNameKey = diagnosisInfo.name;
+          const probability = predictionScores[diagnosisNameKey] ?? 0;
+          
           parsedResults.push({
             code: code,
-            name: DIAGNOSIS_CLASSES[code].name,
+            name: diagnosisInfo.name,
             probability: probability,
           });
-          if (code === 'MEL') {
+
+          if (diagnosisNameKey === 'Melanoma') {
             melRisk = probability * 100;
           }
         }
       }
       
-      // Sort results by probability, descending
       parsedResults.sort((a, b) => b.probability - a.probability);
 
       setAnalysisResults(parsedResults);
@@ -89,15 +86,28 @@ Ensure the output is ONLY the JSON object. Do not include any other text or mark
       setCurrentView(View.Results);
     } catch (err) {
       console.error("Analysis error:", err);
-      let errorMessage = UI_TEXT.geminiError;
+      let errorMessage = UI_TEXT.localApiError; // Updated error message
       if (err instanceof Error) {
-        errorMessage = `${UI_TEXT.errorPrefix} ${err.message}`;
+        errorMessage = err.message.startsWith("Failed to analyze image with local API:") 
+            ? err.message 
+            : `${UI_TEXT.errorPrefix} ${err.message}`;
       }
       setError(errorMessage);
+      // Keep uploaded image preview even on error, so user sees what failed.
+      // Cleared on "Back" or new upload.
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  const closeNotAMoleModal = () => {
+    setShowNotAMoleModal(false);
+    setUploadedImageFile(null); 
+    setUploadedImagePreview(null);
+    if (currentView !== View.Upload) {
+        setCurrentView(View.Upload);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-rose-50 text-gray-800">
@@ -109,7 +119,10 @@ Ensure the output is ONLY the JSON object. Do not include any other text or mark
           </div>
         )}
         {currentView === View.Upload && (
-          <ImageUploadScreen onAnalyze={handleImageUpload} isLoading={isLoading} />
+          <ImageUploadScreen 
+            onAnalyze={handleImageUpload} 
+            isLoading={isLoading}
+          />
         )}
         {currentView === View.Results && uploadedImagePreview && analysisResults && melanomaRiskPercent !== null && uploadedImageFile && (
           <div className="flex flex-col flex-grow"> 
@@ -127,6 +140,14 @@ Ensure the output is ONLY the JSON object. Do not include any other text or mark
       <footer className="text-center p-3 sm:p-4 text-xs sm:text-sm text-gray-500">
         SkinSight &copy; {new Date().getFullYear()} - For informational purposes only. Consult a medical professional for diagnosis.
       </footer>
+
+      <Modal
+        isOpen={showNotAMoleModal}
+        onClose={closeNotAMoleModal}
+        title={UI_TEXT.notAMoleModalTitle}
+      >
+        {UI_TEXT.notAMoleModalMessage}
+      </Modal>
     </div>
   );
 };
