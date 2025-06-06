@@ -67,13 +67,13 @@ class ModelHandler:
             image_file = {
                 "image_file": (os.path.basename(image_path), open(image_path, 'rb'), 'image/jpeg') 
             }
-            payload_metadata = {
-                "metadata": json.dumps({"age": 30, "sex": "Male", "location": "Trunk"})
-            }   #'{"metadata": {"age": 30, "sex": "Male", "location": "Trunk"} }'
+            # payload_metadata = {
+            #     "metadata": json.dumps({"age": 30, "sex": "Male", "location": "Trunk"})
+            # }   #'{"metadata": {"age": 30, "sex": "Male", "location": "Trunk"} }'
             response = requests.post(
                 self.api_url, 
-                files = image_file,
-                data = payload_metadata
+                files = image_file
+                #data = payload_metadata
             )
             response_dict = json.loads(response.text)
 

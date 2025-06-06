@@ -2,6 +2,8 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 from PySide6.QtCore import QObject, Slot, Signal, Property
+import json 
+
 from .database_manager import DatabaseManager
 from .model_handler import ModelHandler
 
@@ -172,11 +174,13 @@ class BackendBridge(QObject):
                 return False
 
             print(self._current_patient_id,  self._current_result)
+            predi_str = json.dumps(self._current_result["predictions"])
+            print(predi_str)
             analysis_data = {
                 "patient_id": self._current_patient_id,
                 "image_path": self._current_image_path,
                 "melanoma_probability": self._current_result["melanoma_probability"],
-                "model_result": self._current_result["predictions"],
+                "predictions": predi_str,
                 "diagnosis_text": self._current_result["diagnosis"],
                 # "metadata": {
                 #     "detail_text": self._current_result["detail_text"],
