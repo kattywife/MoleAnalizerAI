@@ -9,20 +9,7 @@ Window {
     width: 1200 // Увеличим немного для лучшего соответствия пропорциям
     height: 800
     visible: true
-    title: "QML Clicker"
-
-    //ColumnLayout {
-    //    anchors.centerIn: parent // Центрируем содержимое
-    //    anchors.fill: parent
-    //    spacing: 20 // Отступ между элементами
-//
-    //    Screens.MainScreen {
-    //        id: mainScreen
-    //        Layout.fillHeight: true
-    //        Layout.fillWidth: true
-    //        //anchors.fill: parent
-    //    }
-    //}
+    title: "SkinSight"
 
     Item {
         anchors.centerIn: parent // Центрируем содержимое

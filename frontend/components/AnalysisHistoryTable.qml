@@ -7,7 +7,7 @@ Rectangle {
     id: root
     implicitWidth: 500
     implicitHeight: 300
-    color: "white"
+    color: App.Constants.appBackground
     border.color: App.Constants.divider
     border.width: 1
     radius: App.Constants.radiusMedium
@@ -76,7 +76,7 @@ Rectangle {
                 height: 60
 
                 background: Rectangle { 
-                    color: "white" // highlighted ? palette.light : palette.window
+                    color:  App.Constants.appBackground
                     border.width: 1
                     border.color: App.Constants.divider
                     // anchors.margins: 2
@@ -107,7 +107,7 @@ Rectangle {
                         Text {
                             anchors.centerIn: parent
                             text: (modelData.melanoma_probability * 100).toFixed(1) + "%"
-                            color: "white"
+                            color: App.Constants.textPrimary
                             font.bold: true
                         }
                     }

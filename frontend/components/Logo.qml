@@ -4,7 +4,7 @@ import "../" as App
 Item {
     id: root
 
-    property url logoSource: Qt.resolvedUrl("../assets/images/логотип.svg")
+    property url logoSource: Qt.resolvedUrl("../assets/images/logo.png")
     property bool showBackground: false
     property color backgroundColor: "white"
     property real backgroundRadius: App.Constants.radiusMedium

@@ -1,87 +1,90 @@
-import QtQuick // Импорт нужен всегда
+// Constants.qml
+import QtQuick
 
-// Делаем этот файл синглтоном, доступным глобально
+// This file is a singleton, globally available as "Constants" or "App.Constants"
 pragma Singleton
 
 QtObject {
-    // --- Основные цвета приложения ---
-    readonly property color appBackground: "#F5EEEE"      // Очень светлый фон
-    readonly property color headerBackground: "#861010"   // Бордовый
-    readonly property color headerText: "#FFFFFF"         // Белый
+    id: constants
 
-    // --- Цвета текста ---
-    // ИЗМЕНЕНО: Основной цвет текста теперь коричневый
-    readonly property color textPrimary: "#863A1A"        // Основной текст (коричневый)
-    // Вторичный цвет текста оставляем таким же, т.к. он используется для рамок и кнопок
-    readonly property color textSecondary: "#863A1A"      // Коричневый (Sienna) - для акцентов, рамок, текста кнопок
-    readonly property color textOnPrimary: "#FFFFFF"      // Текст на бордовом фоне (белый)
-    readonly property color textOnAccent: "#FFFFFF"       // Текст на цветных фонах результатов (белый)
-    readonly property color textPlaceholder: "#A0A0A0"    // Цвет для плейсхолдеров
+    // --- Theme State ---
+    // The core property that controls the theme. Default is light (false).
+    property bool isDark: false
+
+    // The function that the UI will call to switch the theme.
+    function toggleTheme() {
+        isDark = !isDark;
+        // The change in 'isDark' will automatically update all bound properties.
+    }
+
+    // --- Theme-Dependent Colors ---
+    // Each property now uses a ternary operator to choose the color
+    // based on the 'isDark' property.
+
+    // --- Main Colors ---
+    readonly property color appBackground: isDark ? "#1E1E1E" : "#F5EEEE"
+    readonly property color headerBackground: "#861010"   // Stays the same for brand consistency
+    readonly property color headerText: "#FFFFFF"
+
+    // --- Text Colors ---
+    readonly property color textPrimary: isDark ? "#E0E0E0" : "#863A1A"
+    readonly property color textSecondary: isDark ? "#BDBDBD" : "#863A1A"
+    readonly property color textOnPrimary: "#FFFFFF"
+    readonly property color textOnAccent: "#FFFFFF"
+    readonly property color textPlaceholder: isDark ? "#757575" : "#A0A0A0"
     readonly property color accent: "#861010"
 
-    // --- Цвета рамок и разделителей ---
-    // Используем textSecondary (который тоже #863A1A) для рамок
-    readonly property color borderPrimary: textSecondary
-    readonly property color divider: "#E0E0E0"            // Светло-серый для разделителей
+    // --- Borders and Dividers ---
+    readonly property color borderPrimary: isDark ? textSecondary : textSecondary
+    readonly property color divider: isDark ? "#3A3A3A" : "#E0E0E0"
 
-    // --- Цвета кнопок ---
-    // Основная кнопка (типа "Анализировать")
-    readonly property color buttonPrimaryBackground: headerBackground // Бордовый #861010
-    readonly property color buttonPrimaryText: textOnPrimary          // Белый текст
+    // --- Button Colors ---
+    // Primary Button
+    readonly property color buttonPrimaryBackground: headerBackground
+    readonly property color buttonPrimaryText: textOnPrimary
 
-    // Вторичная кнопка / Кнопка меню
-    readonly property color buttonSecondaryBackground: "#FFFFFF"        // Белый фон
-    readonly property color buttonSecondaryBorder: borderPrimary        // Коричневая рамка (#863A1A)
-    readonly property color buttonSecondaryText: textSecondary          // Коричневый текст (#863A1A)
-    readonly property color buttonSecondaryHover: "#EAEAEA"             // Светло-серый при наведении
-    readonly property color buttonSecondaryPressed: "#E7C2C2"           // Светло-розовый при нажатии
-    readonly property color buttonSecondaryPressedHover: "#E78585"      // Розовый/лососевый (нажатие + наведение)
+    // Secondary Button
+    readonly property color buttonSecondaryBackground: isDark ? "#2C2C2C" : "#FFFFFF"
+    readonly property color buttonSecondaryBorder: borderPrimary
+    readonly property color buttonSecondaryText: textPrimary
+    readonly property color buttonSecondaryHover: isDark ? "#3D3D3D" : "#EAEAEA"
+    readonly property color buttonSecondaryPressed: isDark ? "#4A4A4A" : "#E7C2C2"
+    readonly property color buttonSecondaryPressedHover: isDark ? "#5A5A5A" : "#E78585"
 
-    // Отключенное состояние
-    readonly property color buttonDisabledBackground: "#CECECE" // Серый фон
-    readonly property color buttonDisabledText: "#A0A0A0"       // Блеклый текст
+    // Disabled State
+    readonly property color buttonDisabledBackground: isDark ? "#424242" : "#CECECE"
+    readonly property color buttonDisabledText: isDark ? "#757575" : "#A0A0A0"
 
-    // Акцентная кнопка
-    readonly property color buttonAccentBackground: headerBackground // Используем основной бордовый #861010
-    readonly property color buttonAccentHoverBackground: "#BE2121" // Более яркий красный для наведения
-    readonly property color buttonAccentText: textOnPrimary         // Белый текст
+    // Accent Button
+    readonly property color buttonAccentBackground: headerBackground
+    readonly property color buttonAccentHoverBackground: "#BE2121"
+    readonly property color buttonAccentText: textOnPrimary
 
-//    // --- Цвета для отображения вероятности меланомы ---
-    readonly property color melanomaProbabilityHigh: "#FF5722" // Высокая вероятность (оранжевый)
-    readonly property color melanomaProbabilityMedium: "#FFA726" // Средняя вероятность (светло-оранжевый)
-    readonly property color melanomaProbabilityLow: "#4CAF50" // Низкая вероятность (зеленый)
+    // --- Specific Element Colors ---
+    readonly property color imagePlaceholder: buttonDisabledBackground
+    readonly property color shadow: isDark ? "#99000000" : "#80000000"
 
-    //    // --- Размеры и радиусы ---
-    readonly property int spacing: 16                     // Отступы
-    readonly property int radiusSmall: 4                  // Маленький радиус
-    readonly property int radiusMedium: 8                 // Средний радиус
-    readonly property int radiusLarge: 12 
+    // Result Colors
+    readonly property color melanomaProbabilityHigh: "#FF5722"  // A more visible orange-red
+    readonly property color melanomaProbabilityMedium: "#FFA726"
+    readonly property color melanomaProbabilityLow: "#66BB6A"   // Slightly darker green for better contrast
 
-    // --- Цвета специфичных элементов ---
-    readonly property color imagePlaceholder: buttonDisabledBackground // Серый #CECECE для области изображения
-    readonly property color shadow: "#80000000"           // Полупрозрачный черный для теней
-
-    // Цвета для отображения результатов анализа
-    readonly property color resultHighRisk: "#FF0000"     // Красный
-    readonly property color resultMediumRisk: "#FFA500"   // Оранжевый
-    readonly property color resultLowRisk: "#90EE90"      // Светло-зеленый
-
-    // Цвета для таблиц
-    readonly property color tableHeaderBackground: "#D2B48C" // Бежевый (Tan)
-    // ИЗМЕНЕНО: Текст заголовка таблицы теперь тоже будет коричневым, т.к. он использует textPrimary
+    // Table Colors
+    readonly property color tableHeaderBackground: isDark ? "#333333" : "#D2B48C"
     readonly property color tableHeaderText: textPrimary
-    readonly property color tableCellBorder: "#863A1A"   // Коричневая рамка ячейки (#863A1A)
+    readonly property color tableCellBorder: isDark ? "#555555" : "#863A1A"
+    readonly property color headerPillBackground: isDark ? "#3B1A1A" : "#FBECEC"
 
-    readonly property color headerPillBackground: "#FBECEC" // Light pinkish for table headers
+    // Status Colors
+    readonly property color infoColor: isDark ? "#4FC3F7" : "#2196F3"
+    readonly property color warningColor: isDark ? "#FFB74D" : "#FF9800"
+    readonly property color errorColor: isDark ? "#E57373" : "#F44336"
 
-    readonly property color infoColor: "#2196F3"    // Blue
-    readonly property color warningColor: "#FF9800" // Orange
-    readonly property color errorColor: "#F44336"   // Red
-    
-    // --- Дополнительные цвета из скриншота (пока не используются) ---
-    // readonly property color unusedRed: "#BE2121"
-    // readonly property color unusedTransparentWhite: "#00FFFFFF"
 
-    // --- Шрифт ---
+    // --- Non-Color Constants (remain unchanged) ---
+    readonly property int spacing: 16
+    readonly property int radiusSmall: 4
+    readonly property int radiusMedium: 8
+    readonly property int radiusLarge: 12
     readonly property var fontFamily: Qt.platform.os === "windows" ? "Segoe UI" : "Arial"
 }

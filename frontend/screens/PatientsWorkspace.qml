@@ -28,7 +28,7 @@ Rectangle {
             rightPadding: 10
 
             background: Rectangle {
-                color: "white" //App.Constants.appBackground
+                color: App.Constants.appBackground
                 border.color: App.Constants.divider
                 border.width: 1
                 radius: 18 
@@ -69,7 +69,7 @@ Rectangle {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     //Layout.preferredHeight: parent.height * 0.4
-                    color: "white"
+                    color: App.Constants.appBackground
                     border.color: App.Constants.divider
                     border.width: 1
                     radius: App.Constants.radiusMedium
@@ -203,7 +203,7 @@ Rectangle {
         property string diagnosisText: ""
 
         background: Rectangle {
-            color: "white"
+            color: App.Constants.appBackground
             border.color: App.Constants.divider
             border.width: 1
             radius: 4
@@ -214,7 +214,7 @@ Rectangle {
             id: dialogHeader
             width: parent.width 
             height: 35
-            color: "white"
+            color: App.Constants.appBackground
 
             Text {
                 text: qsTr("Детали анализа") // The title text
@@ -286,7 +286,7 @@ Rectangle {
             id: dialogFooter
             width: parent.width 
             height: 45
-            color: "white"
+            color: App.Constants.appBackground
 
             RowLayout{
                 anchors.fill: parent

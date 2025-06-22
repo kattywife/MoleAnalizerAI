@@ -11,7 +11,7 @@ Item {
     Rectangle {
         id: indicatorBackground
         anchors.fill: parent
-        color: "white"
+        color: App.Constants.appBackground
         border.color: App.Constants.divider
         border.width: 1
         radius: App.Constants.radiusMedium

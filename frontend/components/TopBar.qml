@@ -1,3 +1,4 @@
+// TopBar.qml
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -38,6 +39,33 @@ Rectangle {
 
         Item { Layout.fillWidth: true }
 
+        // --- NEW: THEME SWITCHER ICON ---
+        MouseArea {
+            id: themeSwitcher
+            width: 30
+            height: 30
+            Layout.alignment: Qt.AlignVCenter
+            Layout.rightMargin: 10
+            cursorShape: Qt.PointingHandCursor
+
+            onClicked: {
+                // Call the global function to toggle the theme
+                App.Constants.toggleTheme()
+            }
+
+            Text {
+                anchors.centerIn: parent
+                // The icon character changes based on the theme state
+                text: App.Constants.isDark ? "☀️" : "🌙"
+                color: "white"
+                font.pixelSize: 20
+
+                ToolTip.visible: themeSwitcher.hovered
+                ToolTip.text: App.Constants.isDark ? qsTr("Переключить на светлую тему") : qsTr("Переключить на темную тему")
+            }
+        }
+        // --- END OF NEW CODE ---
+
         Text {
             id: welcomeText
             text: qsTr("Добро пожаловать, %1!").arg(userName)
@@ -69,6 +97,7 @@ Rectangle {
 
             MouseArea {
                 anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
                 onClicked: userMenu.open()
             }
         }

@@ -166,7 +166,7 @@ Rectangle {
                 }
 
                 background: Rectangle {
-                    color: "white"
+                    color: App.Constants.appBackground
                     border.color: App.Constants.divider
                     border.width: 1
                     radius: 4
@@ -192,7 +192,7 @@ Rectangle {
 
                 // Background of the popup itself
                 background: Rectangle {
-                    color: "white"
+                    color: App.Constants.appBackground
                     border.color: App.Constants.divider
                     border.width: 1
                     radius: 4
@@ -211,7 +211,7 @@ Rectangle {
                         highlighted: ListView.isCurrentItem // Highlight current item
 
                         background: Rectangle {
-                            color: parent.hovered ? "#f0f8ff" : "transparent" // Hover color
+                            color: parent.hovered ? App.Constants.buttonSecondaryHover : "transparent" // Hover color
                             radius: 3 // Slight rounding for items
                         }
 

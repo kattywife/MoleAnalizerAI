@@ -78,7 +78,7 @@ Rectangle {
                             anchors.topMargin: 20
                             anchors.horizontalCenter: parent.horizontalCenter
                             text: qsTr("Анализ изображения...")
-                            color: "white"
+                            color: App.Constants.appBackground
                             font.pixelSize: 16
                         }
                     }
@@ -132,7 +132,7 @@ Rectangle {
                         rightPadding: 10
 
                         background: Rectangle {
-                            color: "white"//App.Constants.appBackground
+                            color: App.Constants.appBackground
                             border.color: App.Constants.divider
                             border.width: 1
                             radius: 18 
@@ -173,7 +173,7 @@ Rectangle {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 //Layout.preferredHeight: parent.height * 0.4
-                                color: "white"
+                                color: App.Constants.appBackground
                                 border.color: App.Constants.divider
                                 border.width: 1
                                 radius: App.Constants.radiusMedium
