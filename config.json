@@ -1,0 +1,15 @@
+{
+    "database": {
+        "host": "localhost",
+        "user": "doctor",
+        "password": "1234",
+        "database": "skinsight"
+    },
+    "application": {
+        "uploads_dir": "uploads",
+        "api_url": "https://skinsightserver-production.up.railway.app/predict",
+        "model_file": "model.h5",
+        "default_clinic": "SkinSight",
+        "default_user": "Доктор"
+    }
+}
